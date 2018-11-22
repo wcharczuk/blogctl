@@ -4,52 +4,42 @@ import "github.com/wcharczuk/photoblog/pkg/constants"
 
 // Layout details configuration options for the layout.
 type Layout struct {
-	// index is the path to the index.html
-	Index string `json:"index" yaml:"index"`
-	// home is the path to the list or home page template
-	Home string `json:"home" yaml:"home"`
-	// single is the path to the single post page template
-	Single string `json:"single" yaml:"single"`
+	// Post is the path to the single post page template
+	Post string `json:"post" yaml:"post"`
+	// Pages are extra pages you can add.
+	Pages []string `json:"pages" yaml:"pages"`
 	// partials is a list of paths to include as optional partials
 	Partials []string `json:"partials" yaml:"partials"`
 	// statics are paths to copy as is to the output /static folder
 	Statics []string `json:"statics" yaml:"statics"`
 }
 
-// GetIndex returns the index template or a default.
-func (l Layout) GetIndex() string {
-	if l.Index != "" {
-		return l.Index
+// PostOrDefault returns the single post template or a default.
+func (l Layout) PostOrDefault() string {
+	if l.Post != "" {
+		return l.Post
 	}
-	return constants.TemplateIndex
+	return constants.TemplatePost
 }
 
-// GetHome returns the home template or a default.
-func (l Layout) GetHome() string {
-	if l.Home != "" {
-		return l.Home
+// PagesOrDefault returns page file paths or defaults.
+func (l Layout) PagesOrDefault() []string {
+	if len(l.Pages) > 0 {
+		return l.Pages
 	}
-	return constants.TemplateHome
+	return []string{constants.OutputFileIndex}
 }
 
-// GetSingle returns the single post template or a default.
-func (l Layout) GetSingle() string {
-	if l.Single != "" {
-		return l.Single
-	}
-	return constants.TemplateSingle
-}
-
-// GetPartials returns partial file paths or defaults.
-func (l Layout) GetPartials() []string {
+// PartialsOrDefault returns partial file paths or defaults.
+func (l Layout) PartialsOrDefault() []string {
 	if len(l.Partials) > 0 {
 		return l.Partials
 	}
-	return []string{constants.DiscoveryPathPartials}
+	return nil
 }
 
-// GetStatics returns static file paths or defaults.
-func (l Layout) GetStatics() []string {
+// StaticsOrDefault returns static file paths or defaults.
+func (l Layout) StaticsOrDefault() []string {
 	if len(l.Statics) > 0 {
 		return l.Statics
 	}

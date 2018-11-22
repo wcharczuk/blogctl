@@ -28,10 +28,9 @@ func main() {
 	log := logger.All()
 
 	blogctl.AddCommand(cmd.Init(configPath, log))
+	blogctl.AddCommand(cmd.New(configPath, log))
 	blogctl.AddCommand(cmd.Build(configPath, log))
 	blogctl.AddCommand(cmd.Deploy(configPath, log))
 	blogctl.AddCommand(cmd.Server(configPath, log))
-	if err := blogctl.Execute(); err != nil {
-		log.SyncFatalExit(err)
-	}
+	blogctl.Execute()
 }

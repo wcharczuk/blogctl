@@ -15,14 +15,20 @@ const (
 
 // Files are known filenames for layout templates.
 const (
-	TemplateIndex  = "index.html"
-	TemplateHome   = "home.html"
-	TemplateSingle = "single.html"
+	TemplatePost = "post.html"
 )
 
-// FileIndex are known output file names.
+// OutputFiles are known output file names.
 const (
-	FileIndex = "index.html"
+	OutputFileIndex = "index.html"
+)
+
+// ImageOriginal is the original image.
+const (
+	ImageOriginal = "original.jpg"
+	Image2048     = "2048.jpg"
+	Image1024     = "1024.jpg"
+	Image512      = "512.jpg"
 )
 
 // Partials are important / reused paritals or controls.
@@ -37,14 +43,13 @@ const (
 	DiscoveryPathImages   = "images"
 	DiscoveryPathStatic   = "static"
 	DiscoveryPathPartials = "partials"
-	DiscoveryFileMetadata = "meta.yml"
+	DiscoveryFileMeta     = "meta.yml"
 )
 
 // Extensions are file suffixes that indicate file type.
 const (
 	ExtensionJPG  = ".jpg"
 	ExtensionJPEG = ".jpeg"
-	ExtensionPNG  = ".png"
 )
 
 // ImageExtensions are known image extensions.
@@ -52,6 +57,5 @@ var (
 	ImageExtensions = []string{
 		ExtensionJPG,
 		ExtensionJPEG,
-		ExtensionPNG,
 	}
 )

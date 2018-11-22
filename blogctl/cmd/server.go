@@ -11,15 +11,15 @@ import (
 func Server(configPath *string, log *logger.Logger) *cobra.Command {
 	var bindAddr *string
 	cmd := &cobra.Command{
-		Use:   "build",
-		Short: "Build the photoblog",
+		Use:   "server",
+		Short: "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := ReadConfig(*configPath)
 			if err != nil {
 				log.SyncFatalExit(err)
 			}
 
-			files := config.GetOutput()
+			files := config.OutputOrDefault()
 			app := web.New().WithBindAddr(*bindAddr)
 			app.WithLogger(log)
 			app.ServeStatic("/", files)

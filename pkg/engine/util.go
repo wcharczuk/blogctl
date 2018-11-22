@@ -12,6 +12,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/yaml"
 	"github.com/wcharczuk/photoblog/pkg/exif"
 	"github.com/wcharczuk/photoblog/pkg/model"
@@ -22,6 +23,9 @@ func GetFileInfos(path string) (files []os.FileInfo, err error) {
 	err = filepath.Walk(path, func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+		if currentPath == path {
+			return nil
 		}
 		if info.IsDir() {
 			return filepath.SkipDir
@@ -75,4 +79,9 @@ func ReadImage(path string, ref *model.Image) error {
 		Exif:   model.Exif(exif.Values()),
 	}
 	return nil
+}
+
+// MakeDir creates a new directory.
+func MakeDir(path string) error {
+	return exception.New(os.MkdirAll(path, 0755))
 }

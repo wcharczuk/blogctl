@@ -10,23 +10,31 @@ var (
 
 // Config is the blog config
 type Config struct {
-	Name   string `json:"name" yaml:"name"`
+	Title  string `json:"title" yaml:"title"`
 	Images string `json:"images" yaml:"images"`
 	Output string `json:"output" yaml:"output"`
 	Layout Layout `json:"layout" yaml:"layout"`
 	Extra  Extra  `json:"extra" yaml:"extra"`
 }
 
-// GetImages returns the images path.
-func (c Config) GetImages() string {
+// TitleOrDefault returns the title or a default.
+func (c Config) TitleOrDefault() string {
+	if c.Title != "" {
+		return c.Title
+	}
+	return "Unset"
+}
+
+// ImagesOrDefault returns the images path.
+func (c Config) ImagesOrDefault() string {
 	if c.Images != "" {
 		return c.Images
 	}
 	return constants.ImagesPath
 }
 
-// GetOutput returns the output path.
-func (c Config) GetOutput() string {
+// OutputOrDefault returns the output path.
+func (c Config) OutputOrDefault() string {
 	if c.Output != "" {
 		return c.Output
 	}

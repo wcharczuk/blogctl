@@ -16,12 +16,7 @@ func Build(configPath *string, log *logger.Logger) *cobra.Command {
 			if err != nil {
 				log.SyncFatalExit(err)
 			}
-
-			engine := engine.Engine{
-				Config: config,
-				Log:    log,
-			}
-			if err := engine.Generate(); err != nil {
+			if err := engine.New(config).Generate(); err != nil {
 				log.SyncFatalExit(err)
 			}
 		},

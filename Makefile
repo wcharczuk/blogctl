@@ -14,4 +14,4 @@ all: build-ctl
 
 build-ctl:
 	@echo "$(VERSION)/$(GIT_REF) >> building blogctl"
-    @go install -ldflags="-X github.com/wcharczuk/photoblog/pkg/config.Version=${VERSION} -X github.com/wcharczuk/photoblog/pkg/config.GitRef=${GIT_REF}" ./blogctl
+	@go install -ldflags="-X github.com/wcharczuk/photoblog/pkg/config.Version=${VERSION} -X github.com/wcharczuk/photoblog/pkg/config.GitRef=${GIT_REF}" ./blogctl
