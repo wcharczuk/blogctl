@@ -28,11 +28,17 @@ func Init(configPath *string, log *logger.Logger) *cobra.Command {
 			if err := engine.MakeDir(filepath.Join(name, constants.LayoutPath)); err != nil {
 				log.SyncFatalExit(err)
 			}
-			if err := engine.MakeDir(filepath.Join(name, constants.PartialsPath)); err != nil {
+			if err := engine.MakeDir(filepath.Join(name, constants.DiscoveryPathPages)); err != nil {
+				log.SyncFatalExit(err)
+			}
+			if err := engine.MakeDir(filepath.Join(name, constants.DiscoveryPathPartials)); err != nil {
+				log.SyncFatalExit(err)
+			}
+			if err := engine.MakeDir(filepath.Join(name, constants.DiscoveryPathStatic)); err != nil {
 				log.SyncFatalExit(err)
 			}
 			//create the config
-			config, err := RenderTemplate(configTemplate, Vars{"name": name})
+			config, err := RenderTemplate(configTemplate, Vars{"title": name})
 			if err != nil {
 				log.SyncFatalExit(err)
 			}
@@ -44,20 +50,13 @@ func Init(configPath *string, log *logger.Logger) *cobra.Command {
 }
 
 const (
-	configTemplate = `name: {{ .Var "name" }}
+	configTemplate = `title: {{ .Var "name" }}
 images: images
 output: dist
 layout:
   post: layout/post.html
-  pages:
-  - layout/pages/index.html
-  partials:
-  - layout/partials/image.htm
-  - layout/partials/list.html
-  - layout/partials/about.html
-`
-
-	indexHTML = `
-<html></html>
+  pages: layout/pages
+  partials: layout/partials
+  static: static
 `
 )

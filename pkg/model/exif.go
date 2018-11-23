@@ -1,4 +1,16 @@
 package model
 
-// Exif is a data bag.
-type Exif map[string]interface{}
+// Exif are known values for a subset of the full image exif data.
+type Exif struct {
+	CameraMake  string
+	CameraModel string
+
+	LensMake  string
+	LensModel string
+
+	FNumber      string
+	ExposureTime string
+	FocalLength  string
+
+	ISOSpeedRatings string
+}

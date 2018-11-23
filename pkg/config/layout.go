@@ -4,14 +4,10 @@ import "github.com/wcharczuk/photoblog/pkg/constants"
 
 // Layout details configuration options for the layout.
 type Layout struct {
-	// Post is the path to the single post page template
-	Post string `json:"post" yaml:"post"`
-	// Pages are extra pages you can add.
-	Pages []string `json:"pages" yaml:"pages"`
-	// partials is a list of paths to include as optional partials
-	Partials []string `json:"partials" yaml:"partials"`
-	// statics are paths to copy as is to the output /static folder
-	Statics []string `json:"statics" yaml:"statics"`
+	Post     string `json:"post" yaml:"post"`
+	Pages    string `json:"pages" yaml:"pages"`
+	Partials string `json:"partials" yaml:"partials"`
+	Static   string `json:"static" yaml:"static"`
 }
 
 // PostOrDefault returns the single post template or a default.
@@ -23,25 +19,25 @@ func (l Layout) PostOrDefault() string {
 }
 
 // PagesOrDefault returns page file paths or defaults.
-func (l Layout) PagesOrDefault() []string {
-	if len(l.Pages) > 0 {
+func (l Layout) PagesOrDefault() string {
+	if l.Pages != "" {
 		return l.Pages
 	}
-	return []string{constants.OutputFileIndex}
+	return constants.DiscoveryPathPages
 }
 
 // PartialsOrDefault returns partial file paths or defaults.
-func (l Layout) PartialsOrDefault() []string {
-	if len(l.Partials) > 0 {
+func (l Layout) PartialsOrDefault() string {
+	if l.Partials != "" {
 		return l.Partials
 	}
-	return nil
+	return constants.DiscoveryPathPartials
 }
 
-// StaticsOrDefault returns static file paths or defaults.
-func (l Layout) StaticsOrDefault() []string {
-	if len(l.Statics) > 0 {
-		return l.Statics
+// StaticOrDefault returns static file paths or defaults.
+func (l Layout) StaticOrDefault() string {
+	if l.Static != "" {
+		return l.Static
 	}
-	return []string{constants.DiscoveryPathStatic}
+	return constants.DiscoveryPathStatic
 }

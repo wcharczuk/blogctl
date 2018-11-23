@@ -31,17 +31,11 @@ const (
 	Image512      = "512.jpg"
 )
 
-// Partials are important / reused paritals or controls.
-const (
-	PartialImage = "image.html"
-	PartialList  = "list.html"
-	PartialAbout = "about.html"
-)
-
 // Discovery Paths
 const (
 	DiscoveryPathImages   = "images"
 	DiscoveryPathStatic   = "static"
+	DiscoveryPathPages    = "pages"
 	DiscoveryPathPartials = "partials"
 	DiscoveryFileMeta     = "meta.yml"
 )

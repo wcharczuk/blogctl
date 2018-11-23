@@ -15,7 +15,7 @@ func Copy(src, dest string) error {
 	if err != nil {
 		return exception.New(err)
 	}
-	return copy(src, dest, info)
+	return exception.New(copy(src, dest, info))
 }
 
 // copy dispatches copy-funcs according to the mode.
@@ -89,5 +89,5 @@ func lcopy(src, dest string, info os.FileInfo) error {
 	if err != nil {
 		return exception.New(err)
 	}
-	return os.Symlink(src, dest)
+	return exception.New(os.Symlink(src, dest))
 }

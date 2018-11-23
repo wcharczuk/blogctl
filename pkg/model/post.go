@@ -3,19 +3,34 @@ package model
 import (
 	"fmt"
 	"path/filepath"
+
+	"github.com/wcharczuk/photoblog/pkg/constants"
+	"github.com/wcharczuk/photoblog/pkg/stringutil"
 )
 
 // Post is a single post item.
 type Post struct {
 	Original string `json:"original" yaml:"original"`
-	File     string `json:"file" yaml:"file"`
 	Image    Image  `json:"image" yaml:"image"`
 	Meta     Meta   `json:"meta" yaml:"meta"`
+
+	Previous *Post `json:"-" yaml:"-"`
+	Next     *Post `json:"-" yaml:"-"`
+}
+
+// HasPrevious returns if there is a previous post.
+func (p Post) HasPrevious() bool {
+	return p.Previous != nil && !p.Previous.IsZero()
+}
+
+// HasNext returns if there is a next post.
+func (p Post) HasNext() bool {
+	return p.Next != nil && !p.Next.IsZero()
 }
 
 // IsZero returns if the post is set.
 func (p Post) IsZero() bool {
-	return p.File == "" || p.Image.IsZero()
+	return p.Image.IsZero()
 }
 
 // TitleOrDefault returns the title for the post.
@@ -24,16 +39,39 @@ func (p Post) TitleOrDefault() string {
 	if p.Meta.Title != "" {
 		return p.Meta.Title
 	}
-	return filepath.Base(p.File)
+	return filepath.Base(p.Original)
 }
 
 // Slug returns the fully qualified identifier for the post.
 // It is in the form /Year/Month/Day/Slug
 func (p Post) Slug() string {
-	return fmt.Sprintf("%d/%d/%d/%s", p.Meta.Posted.Year(), p.Meta.Posted.Month(), p.Meta.Posted.Day(), p.TitleOrDefault())
+	titleSlug := stringutil.Slugify(p.TitleOrDefault())
+	return fmt.Sprintf("%d/%d/%d/%s", p.Meta.Posted.Year(), p.Meta.Posted.Month(), p.Meta.Posted.Day(), titleSlug)
 }
 
-// Source returns the fully qualified image source path.
-func (p Post) Source() string {
-	return filepath.Join(p.Slug(), p.File)
+// SlugIndex returns the fully qualified identifier for the post with the trailing index.html.
+// It is in the form /Year/Month/Day/Slug/index.html
+func (p Post) SlugIndex() string {
+	titleSlug := stringutil.Slugify(p.TitleOrDefault())
+	return fmt.Sprintf("%d/%d/%d/%s/%s", p.Meta.Posted.Year(), p.Meta.Posted.Month(), p.Meta.Posted.Day(), titleSlug, constants.OutputFileIndex)
+}
+
+// SourceOriginal returns the fully qualified image source path.
+func (p Post) SourceOriginal() string {
+	return filepath.Join(p.Slug(), constants.ImageOriginal)
+}
+
+// SourceLarge returns the fully qualified image source path.
+func (p Post) SourceLarge() string {
+	return filepath.Join(p.Slug(), constants.Image2048)
+}
+
+// SourceMedium returns the fully qualified image source path.
+func (p Post) SourceMedium() string {
+	return filepath.Join(p.Slug(), constants.Image1024)
+}
+
+// SourceSmall returns the fully qualified image source path.
+func (p Post) SourceSmall() string {
+	return filepath.Join(p.Slug(), constants.Image512)
 }
