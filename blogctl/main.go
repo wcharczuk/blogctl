@@ -25,7 +25,7 @@ func main() {
 	}
 	configPath := blogctl.PersistentFlags().String("config", "config.yml", "The config file path")
 
-	log := logger.All()
+	log := logger.All().WithHeading("photoblog")
 
 	blogctl.AddCommand(cmd.Init(configPath, log))
 	blogctl.AddCommand(cmd.New(configPath, log))

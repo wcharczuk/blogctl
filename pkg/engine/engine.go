@@ -24,7 +24,6 @@ import (
 func New(cfg config.Config) Engine {
 	return Engine{
 		Config: cfg,
-		Log:    logger.All().WithHeading("photoblog"),
 	}
 }
 
@@ -46,7 +45,7 @@ func (e Engine) CreateOutputPath() error {
 func (e Engine) DiscoverPosts() ([]model.Post, error) {
 	imagesPath := e.Config.ImagesOrDefault()
 
-	e.Log.SyncInfof("searching `%s` for images as posts", imagesPath)
+	logger.MaybeSyncInfof(e.Log, "searching `%s` for images as posts", imagesPath)
 
 	var posts []model.Post
 	err := filepath.Walk(imagesPath, func(currentPath string, info os.FileInfo, err error) error {
@@ -57,7 +56,7 @@ func (e Engine) DiscoverPosts() ([]model.Post, error) {
 			return nil
 		}
 		if info.IsDir() {
-			e.Log.SyncInfof("reading `%s` as post", currentPath)
+			logger.MaybeSyncInfof(e.Log, "reading `%s` as post", currentPath)
 			post, err := e.ReadImage(currentPath)
 			if err != nil {
 				return err
@@ -186,7 +185,7 @@ func (e Engine) Render(posts ...model.Post) error {
 		return err
 	}
 	for _, page := range pages {
-		e.Log.Infof("rendering page %s", page.Name())
+		logger.MaybeSyncInfof(e.Log, "rendering page %s", page.Name())
 		pageTemplate, err := e.CompileTemplate(filepath.Join(pagesPath, page.Name()), partials)
 		if err != nil {
 			return err
@@ -210,7 +209,7 @@ func (e Engine) Render(posts ...model.Post) error {
 	for _, post := range posts {
 		slugPath := filepath.Join(outputPath, post.Slug())
 
-		e.Log.Infof("rendering post %s", post.TitleOrDefault())
+		logger.MaybeSyncInfof(e.Log, "rendering post %s", post.TitleOrDefault())
 
 		// make the slug directory tree (i.e. `mkdir -p <slug>`)
 		if err := MakeDir(slugPath); err != nil {
@@ -222,11 +221,6 @@ func (e Engine) Render(posts ...model.Post) error {
 			Post:   post,
 		}); err != nil {
 			return err
-		}
-
-		if _, err := os.Stat(filepath.Join(slugPath, constants.ImageOriginal)); err == nil {
-			e.Log.Infof("skipping resizing post %s", post.TitleOrDefault())
-			continue
 		}
 
 		if err := e.GenerateThumbnails(post.Original, slugPath); err != nil {
@@ -250,24 +244,36 @@ func (e Engine) GenerateThumbnails(originalPath, destinationPath string) error {
 		exception.New(err)
 	}
 
-	e.Log.Infof("copying post %s original", originalPath)
-	// copy the original
-	if err := WriteFile(filepath.Join(destinationPath, constants.ImageOriginal), originalContents); err != nil {
-		return err
-	}
-	e.Log.Infof("resizing post %s 2048px", originalPath)
-	if err := e.Resize(original, filepath.Join(destinationPath, constants.Image2048), 2048); err != nil {
-		return err
-	}
-	e.Log.Infof("resizing post %s 1024px", originalPath)
-	if err := e.Resize(original, filepath.Join(destinationPath, constants.Image1024), 1024); err != nil {
-		return err
-	}
-	e.Log.Infof("resizing post %s 512px", originalPath)
-	if err := e.Resize(original, filepath.Join(destinationPath, constants.Image512), 512); err != nil {
-		return err
+	if e.Config.IncludeOriginalOrDefault() {
+		logger.MaybeSyncInfof(e.Log, "copying post %s original", originalPath)
+		if err := WriteFile(filepath.Join(destinationPath, constants.ImageOriginal), originalContents); err != nil {
+			return err
+		}
 	}
 
+	filepath2048 := filepath.Join(destinationPath, constants.Image2048)
+	if _, err := os.Stat(filepath2048); err != nil {
+		logger.MaybeSyncInfof(e.Log, "resizing post %s 2048px", originalPath)
+		if err := e.Resize(original, filepath2048, 2048); err != nil {
+			return err
+		}
+	}
+
+	filepath1024 := filepath.Join(destinationPath, constants.Image1024)
+	if _, err := os.Stat(filepath1024); err != nil {
+		logger.MaybeSyncInfof(e.Log, "resizing post %s 1024px", originalPath)
+		if err := e.Resize(original, filepath1024, 1024); err != nil {
+			return err
+		}
+	}
+
+	filepath512 := filepath.Join(destinationPath, constants.Image512)
+	if _, err := os.Stat(filepath512); err != nil {
+		logger.MaybeSyncInfof(e.Log, "resizing post %s 512px", originalPath)
+		if err := e.Resize(original, filepath1024, 512); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -320,7 +326,7 @@ func (e Engine) Generate() error {
 		return err
 	}
 
-	e.Log.SyncInfof("discovered %d posts", len(posts))
+	logger.MaybeSyncInfof(e.Log, "discovered %d posts", len(posts))
 
 	// create the output path if it doesn't exist
 	if err := e.CreateOutputPath(); err != nil {
