@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,10 +91,17 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 
 		if !ok || remoteETag != localETag {
 			logger.MaybeInfof(m.Log, "putting %s", key)
+
+			contentType, err := m.DetectContentType(currentPath)
+			if err != nil {
+				return err
+			}
+
 			if err := m.Put(ctx, File{
-				FilePath: currentPath,
-				Key:      key,
-				Bucket:   bucket,
+				FilePath:    currentPath,
+				Key:         key,
+				Bucket:      bucket,
+				ContentType: contentType,
 			}); err != nil {
 				return err
 			}
@@ -256,6 +264,28 @@ func (m Manager) Delete(ctx context.Context, bucket, key string) error {
 		Key:    aws.RefStr(key),
 	})
 	return exception.New(err)
+}
+
+// DetectContentType generates the content type of a given file by path.
+func (m Manager) DetectContentType(path string) (string, error) {
+	if strings.HasSuffix(path, ".css") {
+		return "text/css; charset=utf-8", nil
+	}
+	if strings.HasSuffix(path, ".js") {
+		return "application/javascript", nil
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return "", exception.New(err)
+	}
+	defer f.Close()
+	header := make([]byte, 512)
+	_, err = f.Read(header)
+	if err != nil {
+		return "", exception.New(err)
+	}
+	return http.DetectContentType(header), nil
 }
 
 // GenerateETag generate an etag for a give file by path.
