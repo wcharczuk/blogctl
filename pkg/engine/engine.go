@@ -21,8 +21,8 @@ import (
 )
 
 // New returns a new engine..
-func New(cfg config.Config) Engine {
-	return Engine{
+func New(cfg config.Config) *Engine {
+	return &Engine{
 		Config: cfg,
 	}
 }
@@ -31,6 +31,12 @@ func New(cfg config.Config) Engine {
 type Engine struct {
 	Config config.Config
 	Log    *logger.Logger
+}
+
+// WithLogger sets the logger (optional).
+func (e *Engine) WithLogger(log *logger.Logger) *Engine {
+	e.Log = log
+	return e
 }
 
 // CreateOutputPath creates the output path if it doesn't exist.
@@ -231,8 +237,27 @@ func (e Engine) Render(posts ...model.Post) error {
 	return nil
 }
 
+// FileExists returns if a given file exists.
+func (e Engine) FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
 // GenerateThumbnails generates our main thumbnails for the image.
 func (e Engine) GenerateThumbnails(originalPath, destinationPath string) error {
+	filepath2048 := filepath.Join(destinationPath, constants.Image2048)
+	filepath1024 := filepath.Join(destinationPath, constants.Image1024)
+	filepath512 := filepath.Join(destinationPath, constants.Image512)
+	existsOriginal := e.FileExists(originalPath)
+	includeOriginal := e.Config.IncludeOriginalOrDefault()
+	exists2048 := e.FileExists(filepath2048)
+	exists1024 := e.FileExists(filepath1024)
+	exists512 := e.FileExists(filepath512)
+
+	if (!includeOriginal || (includeOriginal && existsOriginal)) && exists2048 && exists1024 && exists512 {
+		return nil
+	}
+
 	originalContents, err := ioutil.ReadFile(originalPath)
 	if err != nil {
 		return exception.New(err)
@@ -244,31 +269,28 @@ func (e Engine) GenerateThumbnails(originalPath, destinationPath string) error {
 		exception.New(err)
 	}
 
-	if e.Config.IncludeOriginalOrDefault() {
+	if includeOriginal && !existsOriginal {
 		logger.MaybeSyncInfof(e.Log, "copying post %s original", originalPath)
 		if err := WriteFile(filepath.Join(destinationPath, constants.ImageOriginal), originalContents); err != nil {
 			return err
 		}
 	}
 
-	filepath2048 := filepath.Join(destinationPath, constants.Image2048)
-	if _, err := os.Stat(filepath2048); err != nil {
+	if !exists2048 {
 		logger.MaybeSyncInfof(e.Log, "resizing post %s 2048px", originalPath)
 		if err := e.Resize(original, filepath2048, 2048); err != nil {
 			return err
 		}
 	}
 
-	filepath1024 := filepath.Join(destinationPath, constants.Image1024)
-	if _, err := os.Stat(filepath1024); err != nil {
+	if !exists1024 {
 		logger.MaybeSyncInfof(e.Log, "resizing post %s 1024px", originalPath)
 		if err := e.Resize(original, filepath1024, 1024); err != nil {
 			return err
 		}
 	}
 
-	filepath512 := filepath.Join(destinationPath, constants.Image512)
-	if _, err := os.Stat(filepath512); err != nil {
+	if !exists512 {
 		logger.MaybeSyncInfof(e.Log, "resizing post %s 512px", originalPath)
 		if err := e.Resize(original, filepath1024, 512); err != nil {
 			return err
