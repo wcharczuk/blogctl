@@ -40,6 +40,8 @@ type Config struct {
 	Extra Extra `json:"extra" yaml:"extra"`
 	// S3 governs how the blog is deployed.
 	S3 S3 `json:"s3" yaml:"s3"`
+	// S3 governs how the blog is deployed.
+	Cloudfront Cloudfront `json:"cloudfront" yaml:"cloudfront"`
 }
 
 // IncludeOriginalOrDefault returns the option or a default.

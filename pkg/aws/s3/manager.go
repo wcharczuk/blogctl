@@ -42,14 +42,16 @@ func (m Manager) GetKey(rootPath, workingPath string) string {
 }
 
 // SyncDirectory sync's a directory.
-func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string) error {
+// It returns a list of invalidated keys, and an error.
+func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string) ([]string, error) {
 	remoteETags := make(map[string]string)
 	localKeys := make(map[string]bool)
+	invalidated := []string{}
 
 	// walk the s3 bucket, look for files that need to be removed ...
 	remoteFiles, err := m.List(ctx, bucket)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, remoteFile := range remoteFiles {
 		key := remoteFile.Key
@@ -105,6 +107,7 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 			}); err != nil {
 				return err
 			}
+			invalidated = append(invalidated, key)
 		} else {
 			logger.MaybeInfof(m.Log, "skipping %s (unchanged)", key)
 		}
@@ -113,7 +116,7 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 	})
 
 	if err != nil {
-		return exception.New(err)
+		return nil, exception.New(err)
 	}
 
 	for _, remoteFile := range remoteFiles {
@@ -125,12 +128,13 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 		if _, ok := localKeys[key]; !ok {
 			logger.MaybeInfof(m.Log, "removing remote %s", remoteFile.Key)
 			if err := m.Delete(ctx, bucket, remoteFile.Key); err != nil {
-				return err
+				return nil, err
 			}
+			invalidated = append(invalidated, key)
 		}
 	}
 
-	return nil
+	return invalidated, nil
 }
 
 // List lists all files in a bucket.

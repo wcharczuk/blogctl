@@ -6,6 +6,7 @@ import (
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
 	"github.com/wcharczuk/photoblog/pkg/aws"
+	"github.com/wcharczuk/photoblog/pkg/aws/cloudfront"
 	"github.com/wcharczuk/photoblog/pkg/aws/s3"
 )
 
@@ -42,8 +43,17 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 			mgr.PutObjectDefaults = s3.File{
 				ACL: s3.ACLPublicRead,
 			}
-			if err := mgr.SyncDirectory(context.Background(), cfg.OutputPathOrDefault(), *bucket); err != nil {
+			paths, err := mgr.SyncDirectory(context.Background(), cfg.OutputPathOrDefault(), *bucket)
+
+			if err != nil {
 				log.SyncFatal(err)
+			}
+
+			if !cfg.Cloudfront.IsZero() && len(paths) > 0 {
+				log.SyncInfof("cloudfront invalidating %d paths", len(paths))
+				if err := cloudfront.InvalidateMany(context.Background(), mgr.Session, cfg.Cloudfront.Distribution, paths...); err != nil {
+					log.SyncFatalExit(err)
+				}
 			}
 		},
 	}

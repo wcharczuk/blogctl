@@ -13,6 +13,15 @@ func RefStr(str string) *string {
 	return &str
 }
 
+// RefStrs returns a list of string references.
+func RefStrs(inputs ...string) []*string {
+	strs := make([]*string, len(inputs))
+	for index := range inputs {
+		strs[index] = &inputs[index]
+	}
+	return strs
+}
+
 // DerefStr safely dereferences a string.
 func DerefStr(str *string) string {
 	if str == nil {
