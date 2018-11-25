@@ -12,9 +12,10 @@ type TitleOrDefaultProvider interface {
 
 // ViewModel is the type passed to view rendering.
 type ViewModel struct {
-	Config config.Config
-	Posts  []model.Post
-	Post   model.Post
+	Config    config.Config
+	Posts     []model.Post
+	Post      model.Post
+	PostIndex int
 }
 
 // TitleOrDefault returns the title.

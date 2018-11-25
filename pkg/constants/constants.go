@@ -21,6 +21,7 @@ const (
 const (
 	FileIndex = "index.html"
 	FileMeta  = "meta.yml"
+	FileData  = "data.json"
 )
 
 // Sizes are the default sizes for the resized images.

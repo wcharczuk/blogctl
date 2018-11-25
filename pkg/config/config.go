@@ -44,20 +44,22 @@ type Config struct {
 	Cloudfront Cloudfront `json:"cloudfront" yaml:"cloudfront"`
 }
 
-// IncludeOriginalOrDefault returns the option or a default.
-func (c Config) IncludeOriginalOrDefault() bool {
-	if c.IncludeOriginal != nil {
-		return *c.IncludeOriginal
-	}
-	return false
-}
-
 // TitleOrDefault returns the title or a default.
 func (c Config) TitleOrDefault() string {
 	if c.Title != "" {
 		return c.Title
 	}
 	return "Unset"
+}
+
+// AuthorOrDefault returns the author or a default.
+func (c Config) AuthorOrDefault() string {
+	return c.Author
+}
+
+// BaseURLOrDefault returns the base url or a default.
+func (c Config) BaseURLOrDefault() string {
+	return c.BaseURL
 }
 
 // PostsPathOrDefault returns the images path.
@@ -106,6 +108,14 @@ func (c Config) StaticPathOrDefault() string {
 		return c.StaticPath
 	}
 	return constants.DefaultStaticPath
+}
+
+// IncludeOriginalOrDefault returns the option or a default.
+func (c Config) IncludeOriginalOrDefault() bool {
+	if c.IncludeOriginal != nil {
+		return *c.IncludeOriginal
+	}
+	return false
 }
 
 // ImageSizesOrDefault returns the image sizes or a default set.
