@@ -36,7 +36,7 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 				*title = filepath.Base(imagePath)
 			}
 
-			path := fmt.Sprintf("%s/%s-%s", config.ImagesOrDefault(), captureDate.Format("2006-01-02"), stringutil.Slugify(*title))
+			path := fmt.Sprintf("%s/%s-%s", config.PostsPathOrDefault(), captureDate.Format("2006-01-02"), stringutil.Slugify(*title))
 			log.Infof("writing new post to %s", path)
 			if err := engine.MakeDir(path); err != nil {
 				log.SyncFatalExit(err)
@@ -49,7 +49,7 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 				Location: *location,
 				Posted:   captureDate,
 			}
-			if err := WriteYAML(filepath.Join(path, constants.DiscoveryFileMeta), meta); err != nil {
+			if err := WriteYAML(filepath.Join(path, constants.FileMeta), meta); err != nil {
 				log.SyncFatalExit(err)
 			}
 		},

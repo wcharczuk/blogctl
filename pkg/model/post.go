@@ -13,9 +13,8 @@ type Post struct {
 	Original string `json:"original" yaml:"original"`
 	Image    Image  `json:"image" yaml:"image"`
 	Meta     Meta   `json:"meta" yaml:"meta"`
-
-	Previous *Post `json:"-" yaml:"-"`
-	Next     *Post `json:"-" yaml:"-"`
+	Previous *Post  `json:"-" yaml:"-"`
+	Next     *Post  `json:"-" yaml:"-"`
 }
 
 // HasPrevious returns if there is a previous post.
@@ -53,7 +52,7 @@ func (p Post) Slug() string {
 // It is in the form /Year/Month/Day/Slug/index.html
 func (p Post) SlugIndex() string {
 	titleSlug := stringutil.Slugify(p.TitleOrDefault())
-	return fmt.Sprintf("%d/%d/%d/%s/%s", p.Meta.Posted.Year(), p.Meta.Posted.Month(), p.Meta.Posted.Day(), titleSlug, constants.OutputFileIndex)
+	return fmt.Sprintf("%d/%d/%d/%s/%s", p.Meta.Posted.Year(), p.Meta.Posted.Month(), p.Meta.Posted.Day(), titleSlug, constants.FileIndex)
 }
 
 // SourceOriginal returns the fully qualified image source path.
@@ -61,17 +60,22 @@ func (p Post) SourceOriginal() string {
 	return filepath.Join(p.Slug(), constants.ImageOriginal)
 }
 
+// SourceForSize returns the image source for a given image size in pixels.
+func (p Post) SourceForSize(size int) string {
+	return filepath.Join(p.Slug(), fmt.Sprintf(constants.ImageSizeFormat, size))
+}
+
 // SourceLarge returns the fully qualified image source path.
 func (p Post) SourceLarge() string {
-	return filepath.Join(p.Slug(), constants.Image2048)
+	return filepath.Join(p.Slug(), fmt.Sprintf(constants.ImageSizeFormat, constants.SizeLarge))
 }
 
 // SourceMedium returns the fully qualified image source path.
 func (p Post) SourceMedium() string {
-	return filepath.Join(p.Slug(), constants.Image1024)
+	return filepath.Join(p.Slug(), fmt.Sprintf(constants.ImageSizeFormat, constants.SizeMedium))
 }
 
 // SourceSmall returns the fully qualified image source path.
 func (p Post) SourceSmall() string {
-	return filepath.Join(p.Slug(), constants.Image512)
+	return filepath.Join(p.Slug(), fmt.Sprintf(constants.ImageSizeFormat, constants.SizeSmall))
 }

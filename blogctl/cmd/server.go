@@ -19,7 +19,7 @@ func Server(configPath *string, log *logger.Logger) *cobra.Command {
 				log.SyncFatalExit(err)
 			}
 
-			files := config.OutputOrDefault()
+			files := config.OutputPathOrDefault()
 			app := web.New().WithBindAddr(*bindAddr)
 			app.WithLogger(log)
 			app.ServeStatic("/", files)

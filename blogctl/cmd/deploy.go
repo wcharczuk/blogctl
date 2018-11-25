@@ -42,7 +42,7 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 			mgr.PutObjectDefaults = s3.File{
 				ACL: s3.ACLPublicRead,
 			}
-			if err := mgr.SyncDirectory(context.Background(), cfg.OutputOrDefault(), *bucket); err != nil {
+			if err := mgr.SyncDirectory(context.Background(), cfg.OutputPathOrDefault(), *bucket); err != nil {
 				log.SyncFatal(err)
 			}
 		},

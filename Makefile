@@ -12,6 +12,15 @@ export CONFIG_PATH
 
 all: build-ctl
 
+new-install:
+	@go install github.com/blend/go-sdk/cmd/coverage
+
+cover:
+	@coverage
+
+test:
+	@go test -timeout 5s ./...
+
 build-ctl:
 	@echo "$(VERSION)/$(GIT_REF) >> building blogctl"
 	@go install -ldflags="-X github.com/wcharczuk/photoblog/pkg/config.Version=${VERSION} -X github.com/wcharczuk/photoblog/pkg/config.GitRef=${GIT_REF}" ./blogctl

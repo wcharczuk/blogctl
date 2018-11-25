@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"image"
 	"image/jpeg"
@@ -41,15 +42,15 @@ func (e *Engine) WithLogger(log *logger.Logger) *Engine {
 
 // CreateOutputPath creates the output path if it doesn't exist.
 func (e Engine) CreateOutputPath() error {
-	if _, err := os.Stat(e.Config.OutputOrDefault()); err != nil {
-		return MakeDir(e.Config.OutputOrDefault())
+	if _, err := os.Stat(e.Config.OutputPathOrDefault()); err != nil {
+		return MakeDir(e.Config.OutputPathOrDefault())
 	}
 	return nil
 }
 
 // DiscoverPosts finds posts and returns an array of posts.
 func (e Engine) DiscoverPosts() ([]model.Post, error) {
-	imagesPath := e.Config.ImagesOrDefault()
+	imagesPath := e.Config.PostsPathOrDefault()
 
 	logger.MaybeSyncInfof(e.Log, "searching `%s` for images as posts", imagesPath)
 
@@ -62,7 +63,7 @@ func (e Engine) DiscoverPosts() ([]model.Post, error) {
 			return nil
 		}
 		if info.IsDir() {
-			logger.MaybeSyncInfof(e.Log, "reading `%s` as post", currentPath)
+			logger.MaybeSyncInfof(e.Log, "reading post `%s`", currentPath)
 			post, err := e.ReadImage(currentPath)
 			if err != nil {
 				return err
@@ -112,7 +113,7 @@ func (e Engine) ReadImage(path string) (*model.Post, error) {
 	var modTime time.Time
 	for _, fi := range files {
 		name := fi.Name()
-		if name == constants.DiscoveryFileMeta {
+		if name == constants.FileMeta {
 			if err := ReadYAML(filepath.Join(path, name), &post.Meta); err != nil {
 				return nil, err
 			}
@@ -135,7 +136,7 @@ func (e Engine) ReadImage(path string) (*model.Post, error) {
 
 // ReadPartials reads all the partials named in the config.
 func (e Engine) ReadPartials() ([]string, error) {
-	partialsPath := e.Config.Layout.PartialsOrDefault()
+	partialsPath := e.Config.PartialsPathOrDefault()
 
 	partialFiles, err := ListDirectory(partialsPath)
 	if err != nil {
@@ -178,20 +179,20 @@ func (e Engine) CompileTemplate(templatePath string, partials []string) (*templa
 
 // Render writes the templates out for each of the posts.
 func (e Engine) Render(posts ...model.Post) error {
-	outputPath := e.Config.OutputOrDefault()
+	outputPath := e.Config.OutputPathOrDefault()
 
 	partials, err := e.ReadPartials()
 	if err != nil {
 		return err
 	}
 
-	pagesPath := e.Config.Layout.Pages
+	pagesPath := e.Config.PagesPathOrDefault()
 	pages, err := ListDirectory(pagesPath)
 	if err != nil {
 		return err
 	}
 	for _, page := range pages {
-		logger.MaybeSyncInfof(e.Log, "rendering page %s", page.Name())
+		logger.MaybeSyncInfof(e.Log, "rendering page `%s`", page.Name())
 		pageTemplate, err := e.CompileTemplate(filepath.Join(pagesPath, page.Name()), partials)
 		if err != nil {
 			return err
@@ -199,13 +200,14 @@ func (e Engine) Render(posts ...model.Post) error {
 		pageOutputPath := filepath.Join(outputPath, page.Name())
 		if err := e.WriteTemplate(pageTemplate, pageOutputPath, ViewModel{
 			Config: e.Config,
+			Post:   model.Posts(posts).First(),
 			Posts:  posts,
 		}); err != nil {
 			return err
 		}
 	}
 
-	postTemplatePath := e.Config.Layout.PostOrDefault()
+	postTemplatePath := e.Config.PostTemplateOrDefault()
 	postTemplate, err := e.CompileTemplate(postTemplatePath, partials)
 	if err != nil {
 		return err
@@ -215,13 +217,12 @@ func (e Engine) Render(posts ...model.Post) error {
 	for _, post := range posts {
 		slugPath := filepath.Join(outputPath, post.Slug())
 
-		logger.MaybeSyncInfof(e.Log, "rendering post %s", post.TitleOrDefault())
+		logger.MaybeSyncInfof(e.Log, "rendering post `%s`", post.TitleOrDefault())
 
-		// make the slug directory tree (i.e. `mkdir -p <slug>`)
 		if err := MakeDir(slugPath); err != nil {
 			return exception.New(err)
 		}
-		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.OutputFileIndex), ViewModel{
+		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.FileIndex), ViewModel{
 			Config: e.Config,
 			Posts:  posts,
 			Post:   post,
@@ -243,18 +244,28 @@ func (e Engine) FileExists(path string) bool {
 	return err == nil
 }
 
-// GenerateThumbnails generates our main thumbnails for the image.
-func (e Engine) GenerateThumbnails(originalPath, destinationPath string) error {
-	filepath2048 := filepath.Join(destinationPath, constants.Image2048)
-	filepath1024 := filepath.Join(destinationPath, constants.Image1024)
-	filepath512 := filepath.Join(destinationPath, constants.Image512)
+// ShouldGenerateThumbnails returns if we should parse the original file
+// so that we can generate thumbnails.
+func (e Engine) ShouldGenerateThumbnails(originalPath, destinationPath string) bool {
 	existsOriginal := e.FileExists(originalPath)
 	includeOriginal := e.Config.IncludeOriginalOrDefault()
-	exists2048 := e.FileExists(filepath2048)
-	exists1024 := e.FileExists(filepath1024)
-	exists512 := e.FileExists(filepath512)
 
-	if (!includeOriginal || (includeOriginal && existsOriginal)) && exists2048 && exists1024 && exists512 {
+	if includeOriginal && !existsOriginal {
+		return true
+	}
+
+	for _, size := range e.Config.ImageSizesOrDefault() {
+		imageFilepath := filepath.Join(destinationPath, fmt.Sprintf(constants.ImageSizeFormat, size))
+		if !e.FileExists(imageFilepath) {
+			return true
+		}
+	}
+	return false
+}
+
+// GenerateThumbnails generates our main thumbnails for the image.
+func (e Engine) GenerateThumbnails(originalPath, destinationPath string) error {
+	if !e.ShouldGenerateThumbnails(originalPath, destinationPath) {
 		return nil
 	}
 
@@ -269,30 +280,23 @@ func (e Engine) GenerateThumbnails(originalPath, destinationPath string) error {
 		exception.New(err)
 	}
 
+	existsOriginal := e.FileExists(originalPath)
+	includeOriginal := e.Config.IncludeOriginalOrDefault()
+
 	if includeOriginal && !existsOriginal {
-		logger.MaybeSyncInfof(e.Log, "copying post %s original", originalPath)
+		logger.MaybeSyncInfof(e.Log, "copying post `%s` original", originalPath)
 		if err := WriteFile(filepath.Join(destinationPath, constants.ImageOriginal), originalContents); err != nil {
 			return err
 		}
 	}
 
-	if !exists2048 {
-		logger.MaybeSyncInfof(e.Log, "resizing post %s 2048px", originalPath)
-		if err := e.Resize(original, filepath2048, 2048); err != nil {
-			return err
+	for _, size := range e.Config.ImageSizesOrDefault() {
+		imageFilepath := filepath.Join(destinationPath, fmt.Sprintf(constants.ImageSizeFormat, size))
+		if e.FileExists(imageFilepath) {
+			continue
 		}
-	}
-
-	if !exists1024 {
-		logger.MaybeSyncInfof(e.Log, "resizing post %s 1024px", originalPath)
-		if err := e.Resize(original, filepath1024, 1024); err != nil {
-			return err
-		}
-	}
-
-	if !exists512 {
-		logger.MaybeSyncInfof(e.Log, "resizing post %s 512px", originalPath)
-		if err := e.Resize(original, filepath1024, 512); err != nil {
+		logger.MaybeSyncInfof(e.Log, "resizing post `%s` %dpx", originalPath, size)
+		if err := e.Resize(original, imageFilepath, uint(size)); err != nil {
 			return err
 		}
 	}
@@ -330,9 +334,8 @@ func (e Engine) WriteTemplate(tpl *template.Template, outputPath string, data in
 
 // CopyStatics copies static files to the output directory.
 func (e Engine) CopyStatics() error {
-	outputPath := e.Config.OutputOrDefault()
-	// copy statics (things like css or js)
-	staticPath := e.Config.Layout.StaticOrDefault()
+	outputPath := e.Config.OutputPathOrDefault()
+	staticPath := e.Config.StaticPathOrDefault()
 	if err := Copy(staticPath, outputPath); err != nil {
 		return err
 	}
@@ -341,14 +344,11 @@ func (e Engine) CopyStatics() error {
 
 // Generate generates the blog to the given output directory.
 func (e Engine) Generate() error {
-
 	// discover posts
 	posts, err := e.DiscoverPosts()
 	if err != nil {
 		return err
 	}
-
-	logger.MaybeSyncInfof(e.Log, "discovered %d posts", len(posts))
 
 	// create the output path if it doesn't exist
 	if err := e.CreateOutputPath(); err != nil {
