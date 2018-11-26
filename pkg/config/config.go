@@ -31,8 +31,8 @@ type Config struct {
 	PartialsPath string `json:"partialsPath" yaml:"partialsPath"`
 	// StaticPath is the path to a folder with static files to copy over.
 	StaticPath string `json:"staticPath" yaml:"staticPath"`
-	// IncludeOriginal indicates if we should also copy the original file to output.
-	IncludeOriginal *bool `json:"includeOriginal" yaml:"includeOriginal"`
+	// ThumbnailCachePath is the path to the thumbnail cache.
+	ThumbnailCachePath string `json:"thumbnailCachePath" yaml:"thumbnailCachePath"`
 	// ImageSizes lets you set what size thumbnails to create from post files.
 	// This defaults to 2048px, 1024px, and 512px.
 	ImageSizes []int `json:"imageSizes" yaml:"imageSizes"`
@@ -110,12 +110,12 @@ func (c Config) StaticPathOrDefault() string {
 	return constants.DefaultStaticPath
 }
 
-// IncludeOriginalOrDefault returns the option or a default.
-func (c Config) IncludeOriginalOrDefault() bool {
-	if c.IncludeOriginal != nil {
-		return *c.IncludeOriginal
+// ThumbnailCachePathOrDefault returns static file paths or defaults.
+func (c Config) ThumbnailCachePathOrDefault() string {
+	if c.ThumbnailCachePath != "" {
+		return c.ThumbnailCachePath
 	}
-	return false
+	return constants.DefaultThumbnailCachePath
 }
 
 // ImageSizesOrDefault returns the image sizes or a default set.

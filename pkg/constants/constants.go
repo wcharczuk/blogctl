@@ -7,6 +7,8 @@ const (
 	DefaultPostsPath = "posts"
 	// DefaultStaticPath is the default source path static files.
 	DefaultStaticPath = "static"
+	// DefaultThumbnailCachePath is the default thumbnail cache path.
+	DefaultThumbnailCachePath = "thumbnails"
 	// DefaultPagesPath is the default partials path.
 	DefaultPagesPath = "layout/pages"
 	// DefaultPartialsPath is the default partials path.
