@@ -146,9 +146,11 @@ func GenerateExifData(exifData *exif.Exif) (data model.Exif, err error) {
 		err = exception.New(tagErr)
 		return
 	}
+
 	if tag, tagErr := exifData.Get(exif.LensMake); tagErr == nil {
 		data.LensMake = tag.String()
 	}
+
 	if tag, tagErr := exifData.Get(exif.LensModel); tagErr == nil {
 		data.LensModel = tag.String()
 	}

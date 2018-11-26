@@ -204,6 +204,31 @@ func (e Engine) Render(data *model.Data) error {
 // utilities
 //
 
+// ProcessThumbnails processes thumbnails.
+func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) error {
+	originalContents, err := ioutil.ReadFile(originalFilePath)
+	if err != nil {
+		return exception.New(err)
+	}
+
+	etag, err := fileutil.ETag(originalContents)
+	if err != nil {
+		return err
+	}
+
+	if e.ShouldGenerateThumbnails(etag) {
+		if err := e.GenerateThumbnails(originalContents, etag); err != nil {
+			return nil
+		}
+	}
+
+	if err := e.CopyThumbnails(etag, destinationPath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ReadImage reads post metadata from a folder.
 func (e Engine) ReadImage(path string) (*model.Post, error) {
 	stat, err := os.Stat(path)
@@ -304,24 +329,10 @@ func (e Engine) WriteData(data *model.Data, path string) error {
 	return exception.New(json.NewEncoder(f).Encode(data))
 }
 
-// ProcessThumbnails generates and copies our main thumbnails for the post image.
+// GenerateThumbnails generates and copies our main thumbnails for the post image.
 // - originalFilePath should be the path to the original image file
 // - destinationPath should be the path to the output slug folder
-func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) error {
-	originalContents, err := ioutil.ReadFile(originalFilePath)
-	if err != nil {
-		return exception.New(err)
-	}
-
-	etag, err := fileutil.ETag(originalContents)
-	if err != nil {
-		return err
-	}
-
-	if !e.ShouldGenerateThumbnails(etag) {
-		return nil
-	}
-
+func (e Engine) GenerateThumbnails(originalContents []byte, etag string) error {
 	// decode jpeg into image.Image
 	original, err := jpeg.Decode(bytes.NewBuffer(originalContents))
 	if err != nil {
@@ -329,10 +340,30 @@ func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) erro
 	}
 
 	for _, size := range e.Config.ImageSizesOrDefault() {
-		if err := e.ProcessThumbnail(original, size, etag, originalFilePath, destinationPath); err != nil {
+		if err := e.GenerateThumbnail(original, size, etag); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// GenerateThumbnail generates a thumbnail and stores it in the cache if it doesn't exist
+// and copies the cached thumbail to the output directory.
+func (e Engine) GenerateThumbnail(original image.Image, size int, etag string) error {
+	// if the cached version doesnt exist, generate it
+	// copy over the cached version
+	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
+	thumbnailPath := filepath.Join(thumbnailCachePath, etag, fmt.Sprintf("%d.jpg", size))
+	if !fileutil.Exists(thumbnailPath) {
+		logger.MaybeSyncInfof(e.Log, "generating cached thumbnail `%s` @ %dpx", etag, size)
+		if err := MakeDir(filepath.Join(thumbnailCachePath, etag)); err != nil {
+			return err
+		}
+		if err := e.Resize(original, thumbnailPath, uint(size)); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -348,30 +379,6 @@ func (e Engine) ShouldGenerateThumbnails(etag string) bool {
 	return false
 }
 
-// ProcessThumbnail generates a thumbnail and stores it in the cache if it doesn't exist
-// and copies the cached thumbail to the output directory.
-func (e Engine) ProcessThumbnail(original image.Image, size int, etag, originalPath, destinationPath string) error {
-	// if the cached version doesnt exist, generate it
-	// copy over the cached version
-	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
-	thumbnailPath := filepath.Join(thumbnailCachePath, etag, fmt.Sprintf("%d.jpg", size))
-	if !fileutil.Exists(thumbnailPath) {
-		logger.MaybeSyncInfof(e.Log, "generating cached thumbnail `%s` @ %dpx", originalPath, size)
-		if err := MakeDir(filepath.Join(thumbnailCachePath, etag)); err != nil {
-			return err
-		}
-		if err := e.Resize(original, thumbnailPath, uint(size)); err != nil {
-			return err
-		}
-	}
-	outputPath := filepath.Join(destinationPath, fmt.Sprintf(constants.ImageSizeFormat, size))
-	if err := Copy(thumbnailPath, outputPath); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Resize resizes an image to a destination.
 func (e Engine) Resize(original image.Image, destination string, maxDimension uint) error {
 	resized := resize.Thumbnail(maxDimension, maxDimension, original, resize.Bicubic)
@@ -380,10 +387,31 @@ func (e Engine) Resize(original image.Image, destination string, maxDimension ui
 		return exception.New(err)
 	}
 	defer out.Close()
-
 	// write new image to file
 	if err := jpeg.Encode(out, resized, nil); err != nil {
 		return exception.New(err)
+	}
+	return nil
+}
+
+// CopyThumbnails copies all thumbnails to the destination path by etag from the thumbnail cache.
+func (e Engine) CopyThumbnails(etag, destinationPath string) error {
+	for _, size := range e.Config.ImageSizesOrDefault() {
+		if err := e.CopyThumbnail(etag, destinationPath, size); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CopyThumbnail copies a cached thumbnail to the output directory.
+func (e Engine) CopyThumbnail(etag, destinationPath string, size int) error {
+	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
+	thumbnailPath := filepath.Join(thumbnailCachePath, etag, fmt.Sprintf("%d.jpg", size))
+	outputPath := filepath.Join(destinationPath, fmt.Sprintf(constants.ImageSizeFormat, size))
+	logger.MaybeSyncInfof(e.Log, "copying cached thumbnail `%s` @ %dpx", destinationPath, size)
+	if err := Copy(thumbnailPath, outputPath); err != nil {
+		return err
 	}
 	return nil
 }

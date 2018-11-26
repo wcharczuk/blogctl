@@ -2,15 +2,12 @@ package model
 
 // Exif are known values for a subset of the full image exif data.
 type Exif struct {
-	CameraMake  string
-	CameraModel string
-
-	LensMake  string
-	LensModel string
-
-	FNumber      string
-	ExposureTime string
-	FocalLength  string
-
-	ISOSpeedRatings string
+	CameraMake      string `json:"cameraMake" yaml:"cameraMake"`
+	CameraModel     string `json:"cameraModel" yaml:"cameraModel"`
+	LensMake        string `json:"lensMake" yaml:"lensMake"`
+	LensModel       string `json:"lensModel" yaml:"lensModel"`
+	FNumber         string `json:"fNumber" yaml:"fNumber"`
+	ExposureTime    string `json:"exposureTime" yaml:"exposureTime"`
+	FocalLength     string `json:"focalLength" yaml:"focalLength"`
+	ISOSpeedRatings string `json:"isoSpeedRatings" yaml:"isoSpeedRatings"`
 }
