@@ -14,6 +14,8 @@ type Config struct {
 	Title string `json:"title" yaml:"title"`
 	// Author is your name.
 	Author string `json:"author" yaml:"author"`
+	// Description is a description for the blog, will be used in html head meta.
+	Description string `json:"description" yaml:"description"`
 	// BaseURL is the base url for the blog.
 	BaseURL string `json:"baseURL" yaml:"baseURL"`
 
