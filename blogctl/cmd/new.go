@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
+	"github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
 	"github.com/wcharczuk/photoblog/pkg/constants"
@@ -14,7 +16,8 @@ import (
 
 // New returns a new post command.
 func New(configPath *string, log *logger.Logger) *cobra.Command {
-	var title, location *string
+	var title, location, posted *string
+	var tags *[]string
 	cmd := &cobra.Command{
 		Use:   "new [IMAGE_PATH]",
 		Short: "Create a new blog post from a file",
@@ -27,16 +30,24 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 				log.SyncFatalExit(err)
 			}
 
-			captureDate, err := engine.ExtractCaptureDate(imagePath)
-			if err != nil {
-				log.SyncFatalExit(err)
+			var postedDate time.Time
+			if *posted != "" {
+				postedDate, err = time.Parse("2006-01-02", *posted)
+				if err != nil {
+					log.SyncFatalExit(exception.New(err))
+				}
+			} else {
+				postedDate, err = engine.ExtractCaptureDate(imagePath)
+				if err != nil {
+					log.SyncFatalExit(err)
+				}
 			}
 
 			if *title == "" {
 				*title = filepath.Base(imagePath)
 			}
 
-			path := fmt.Sprintf("%s/%s-%s", config.PostsPathOrDefault(), captureDate.Format("2006-01-02"), stringutil.Slugify(*title))
+			path := fmt.Sprintf("%s/%s-%s", config.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
 			log.Infof("writing new post to %s", path)
 			if err := engine.MakeDir(path); err != nil {
 				log.SyncFatalExit(err)
@@ -44,10 +55,16 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 			if err := engine.Copy(imagePath, filepath.Join(path, filepath.Base(imagePath))); err != nil {
 				log.SyncFatalExit(err)
 			}
+
+			var metaTags []string
+			if tags != nil {
+				metaTags = *tags
+			}
 			meta := model.Meta{
 				Title:    *title,
 				Location: *location,
-				Posted:   captureDate,
+				Posted:   postedDate,
+				Tags:     metaTags,
 			}
 			if err := WriteYAML(filepath.Join(path, constants.FileMeta), meta); err != nil {
 				log.SyncFatalExit(err)
@@ -55,7 +72,9 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 		},
 	}
 
-	title = cmd.Flags().String("title", "", "An optional title (default will be the file name)")
-	location = cmd.Flags().String("location", "", "An optional location")
+	title = cmd.Flags().String("title", "", "The title (optional, will default to the file name)")
+	location = cmd.Flags().String("location", "", "The location (optional)")
+	posted = cmd.Flags().String("posted", "", "The posted effective date (optional)")
+	tags = cmd.Flags().StringArray("tag", nil, "Photo tags (optional)")
 	return cmd
 }

@@ -193,7 +193,7 @@ func (e Engine) Render(data *model.Data) error {
 		return err
 	}
 
-	if err := e.WriteData(data, filepath.Join(outputPath, constants.FileData)); err != nil {
+	if err := e.WriteDataJSON(data, filepath.Join(outputPath, constants.FileData)); err != nil {
 		return err
 	}
 
@@ -319,8 +319,8 @@ func (e Engine) CompileTemplate(templatePath string, partials []string) (*templa
 	return final, nil
 }
 
-// WriteData writes a data file to disk.
-func (e Engine) WriteData(data *model.Data, path string) error {
+// WriteDataJSON writes a data file to disk.
+func (e Engine) WriteDataJSON(data *model.Data, path string) error {
 	f, err := os.Create(path)
 	if err != nil {
 		return exception.New(err)
