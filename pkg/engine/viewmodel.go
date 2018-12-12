@@ -14,8 +14,11 @@ type TitleOrDefaultProvider interface {
 type ViewModel struct {
 	Config    config.Config
 	Posts     []model.Post
+	Tags      []model.TagPosts
 	Post      model.Post
 	PostIndex int
+	Tag       model.TagPosts
+	TagIndex  int
 }
 
 // TitleOrDefault returns the title.

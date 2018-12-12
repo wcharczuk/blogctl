@@ -102,6 +102,14 @@ func (c Config) PostTemplateOrDefault() string {
 	return constants.DefaultPostTemplate
 }
 
+// TagTemplateOrDefault returns the single tag template or a default.
+func (c Config) TagTemplateOrDefault() string {
+	if c.TagTemplate != "" {
+		return c.TagTemplate
+	}
+	return constants.DefaultTagTemplate
+}
+
 // PagesPathOrDefault returns page file paths or defaults.
 func (c Config) PagesPathOrDefault() string {
 	if c.PagesPath != "" {

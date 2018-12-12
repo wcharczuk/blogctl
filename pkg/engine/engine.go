@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/blend/go-sdk/exception"
@@ -32,9 +33,8 @@ func New(cfg config.Config) *Engine {
 
 // Engine returns a
 type Engine struct {
-	Config       config.Config
-	SlugTemplate *template.Template
-	Log          *logger.Logger
+	Config config.Config
+	Log    *logger.Logger
 }
 
 //
@@ -49,11 +49,6 @@ func (e *Engine) WithLogger(log *logger.Logger) *Engine {
 
 // Generate generates the blog to the given output directory.
 func (e Engine) Generate() error {
-	err := e.EnsureSlugTemplate()
-	if err != nil {
-		return err
-	}
-
 	data, err := e.GenerateData()
 	if err != nil {
 		return err
@@ -94,6 +89,11 @@ func (e Engine) InitializeThumbnailCache() error {
 
 // GenerateData generates the blog data.
 func (e Engine) GenerateData() (*model.Data, error) {
+	slugTemplate, err := e.ParseSlugTemplate()
+	if err != nil {
+		return nil, err
+	}
+
 	output := model.Data{
 		Title:   e.Config.TitleOrDefault(),
 		Author:  e.Config.AuthorOrDefault(),
@@ -103,7 +103,7 @@ func (e Engine) GenerateData() (*model.Data, error) {
 	imagesPath := e.Config.PostsPathOrDefault()
 
 	logger.MaybeSyncInfof(e.Log, "searching `%s` for images as posts", imagesPath)
-	err := filepath.Walk(imagesPath, func(currentPath string, info os.FileInfo, err error) error {
+	err = filepath.Walk(imagesPath, func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ func (e Engine) GenerateData() (*model.Data, error) {
 		}
 		if info.IsDir() {
 			logger.MaybeSyncInfof(e.Log, "reading post `%s`", currentPath)
-			post, err := e.ReadImage(currentPath)
+			post, err := e.ReadImage(slugTemplate, currentPath)
 			if err != nil {
 				return err
 			}
@@ -143,9 +143,13 @@ func (e Engine) GenerateData() (*model.Data, error) {
 			output.Posts[index].Next = &output.Posts[index+1]
 		}
 	}
+
+	// add tags, make sure they're sorted.
 	for _, tag := range tags {
 		output.Tags = append(output.Tags, *tag)
 	}
+	sort.Sort(model.TagPostsByTag(output.Tags))
+
 	return &output, nil
 }
 
@@ -175,6 +179,7 @@ func (e Engine) Render(data *model.Data) error {
 			PostIndex: index,
 			Post:      model.Posts(data.Posts).First(),
 			Posts:     data.Posts,
+			Tags:      data.Tags,
 		}); err != nil {
 			return err
 		}
@@ -197,6 +202,7 @@ func (e Engine) Render(data *model.Data) error {
 		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.FileIndex), ViewModel{
 			Config:    e.Config,
 			Posts:     data.Posts,
+			Tags:      data.Tags,
 			Post:      post,
 			PostIndex: index,
 		}); err != nil {
@@ -204,6 +210,29 @@ func (e Engine) Render(data *model.Data) error {
 		}
 		if err := e.ProcessThumbnails(post.OriginalPath, slugPath); err != nil {
 			return err
+		}
+	}
+
+	tagTemplatePath := e.Config.TagTemplateOrDefault()
+	if len(tagTemplatePath) > 0 && fileutil.Exists(tagTemplatePath) {
+		tagTemplate, err := e.CompileTemplate(tagTemplatePath, partials)
+		if err != nil {
+			return err
+		}
+		for index, tag := range data.Tags {
+			tagPath := filepath.Join("tags", tag.Tag)
+			if err := MakeDir(tagPath); err != nil {
+				return exception.New(err)
+			}
+			if err := e.WriteTemplate(tagTemplate, filepath.Join(tagPath, constants.FileIndex), ViewModel{
+				Config:   e.Config,
+				Posts:    data.Posts,
+				Tags:     data.Tags,
+				Tag:      tag,
+				TagIndex: index,
+			}); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -249,7 +278,7 @@ func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) erro
 }
 
 // ReadImage reads post metadata from a folder.
-func (e Engine) ReadImage(path string) (*model.Post, error) {
+func (e Engine) ReadImage(slugTemplate *template.Template, path string) (*model.Post, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -285,7 +314,7 @@ func (e Engine) ReadImage(path string) (*model.Post, error) {
 			}
 		}
 	}
-	post.Slug = e.CreateSlug(post)
+	post.Slug = e.CreateSlug(slugTemplate, post)
 	if post.Meta.Posted.IsZero() {
 		post.Meta.Posted = modTime
 	}
@@ -322,8 +351,7 @@ func (e Engine) CompileTemplate(templatePath string, partials []string) (*templa
 		return nil, exception.New(err)
 	}
 
-	vf := sdkTemplate.ViewFuncs{}.FuncMap()
-	tmp := template.New("").Funcs(vf)
+	tmp := template.New("").Funcs(sdkTemplate.Funcs.FuncMap())
 	for _, partial := range partials {
 		_, err := tmp.Parse(partial)
 		if err != nil {
@@ -448,20 +476,13 @@ func (e Engine) WriteTemplate(tpl *template.Template, outputPath string, data in
 	return nil
 }
 
-// EnsureSlugTemplate ensures the slug template
-func (e *Engine) EnsureSlugTemplate() error {
-	if e.SlugTemplate == nil {
-		tmp, err := ParseTemplate(e.Config.SlugTemplateOrDefault())
-		if err != nil {
-			return err
-		}
-		e.SlugTemplate = tmp
-	}
-	return nil
+// ParseSlugTemplate ensures the slug template
+func (e *Engine) ParseSlugTemplate() (*template.Template, error) {
+	return ParseTemplate(e.Config.SlugTemplateOrDefault())
 }
 
 // CreateSlug creates a slug for a post.
-func (e Engine) CreateSlug(p model.Post) string {
-	output, _ := RenderString(e.SlugTemplate, p)
+func (e Engine) CreateSlug(slugTemplate *template.Template, p model.Post) string {
+	output, _ := RenderString(slugTemplate, p)
 	return output
 }

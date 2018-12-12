@@ -17,6 +17,8 @@ const (
 	DefaultConfigPath = "config.yml"
 	// DefaultPostTemplate is the default post template path.
 	DefaultPostTemplate = "layout/post.html"
+	// DefaultTagTemplate is the default tag template path.
+	DefaultTagTemplate = "layout/tag.html"
 )
 
 // DefaultSlugTemplate is the default slug format.
