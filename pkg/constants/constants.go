@@ -19,6 +19,11 @@ const (
 	DefaultPostTemplate = "layout/post.html"
 )
 
+// DefaultSlugTemplate is the default slug format.
+const (
+	DefaultSlugTemplate = `{{ .Meta.Posted | time_format "2006/01/02" }}/{{ .Meta.Title | slugify }}`
+)
+
 // OutputFiles are known output file names.
 const (
 	FileIndex = "index.html"

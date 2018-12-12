@@ -5,14 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/wcharczuk/photoblog/pkg/constants"
-	"github.com/wcharczuk/photoblog/pkg/stringutil"
 )
-
-// CreateSlug creates a slug for a post.
-func CreateSlug(p Post) string {
-	titleSlug := stringutil.Slugify(p.TitleOrDefault())
-	return fmt.Sprintf("%d/%d/%d/%s", p.Meta.Posted.Year(), p.Meta.Posted.Month(), p.Meta.Posted.Day(), titleSlug)
-}
 
 // Post is a single post item.
 type Post struct {

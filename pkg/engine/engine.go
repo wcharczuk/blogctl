@@ -32,8 +32,9 @@ func New(cfg config.Config) *Engine {
 
 // Engine returns a
 type Engine struct {
-	Config config.Config
-	Log    *logger.Logger
+	Config       config.Config
+	SlugTemplate *template.Template
+	Log          *logger.Logger
 }
 
 //
@@ -48,6 +49,11 @@ func (e *Engine) WithLogger(log *logger.Logger) *Engine {
 
 // Generate generates the blog to the given output directory.
 func (e Engine) Generate() error {
+	err := e.EnsureSlugTemplate()
+	if err != nil {
+		return err
+	}
+
 	data, err := e.GenerateData()
 	if err != nil {
 		return err
@@ -93,6 +99,7 @@ func (e Engine) GenerateData() (*model.Data, error) {
 		Author:  e.Config.AuthorOrDefault(),
 		BaseURL: e.Config.BaseURLOrDefault(),
 	}
+	tags := make(map[string]*model.TagPosts)
 	imagesPath := e.Config.PostsPathOrDefault()
 
 	logger.MaybeSyncInfof(e.Log, "searching `%s` for images as posts", imagesPath)
@@ -110,6 +117,16 @@ func (e Engine) GenerateData() (*model.Data, error) {
 				return err
 			}
 			output.Posts = append([]model.Post{*post}, output.Posts...)
+			for _, tag := range post.Meta.Tags {
+				if group, ok := tags[tag]; ok {
+					group.Posts = append(group.Posts, *post)
+				} else {
+					tags[tag] = &model.TagPosts{
+						Tag:   tag,
+						Posts: []model.Post{*post},
+					}
+				}
+			}
 		}
 		return nil
 	})
@@ -126,7 +143,9 @@ func (e Engine) GenerateData() (*model.Data, error) {
 			output.Posts[index].Next = &output.Posts[index+1]
 		}
 	}
-
+	for _, tag := range tags {
+		output.Tags = append(output.Tags, *tag)
+	}
 	return &output, nil
 }
 
@@ -266,7 +285,7 @@ func (e Engine) ReadImage(path string) (*model.Post, error) {
 			}
 		}
 	}
-	post.Slug = model.CreateSlug(post)
+	post.Slug = e.CreateSlug(post)
 	if post.Meta.Posted.IsZero() {
 		post.Meta.Posted = modTime
 	}
@@ -427,4 +446,22 @@ func (e Engine) WriteTemplate(tpl *template.Template, outputPath string, data in
 		return exception.New(err)
 	}
 	return nil
+}
+
+// EnsureSlugTemplate ensures the slug template
+func (e *Engine) EnsureSlugTemplate() error {
+	if e.SlugTemplate == nil {
+		tmp, err := ParseTemplate(e.Config.SlugTemplateOrDefault())
+		if err != nil {
+			return err
+		}
+		e.SlugTemplate = tmp
+	}
+	return nil
+}
+
+// CreateSlug creates a slug for a post.
+func (e Engine) CreateSlug(p model.Post) string {
+	output, _ := RenderString(e.SlugTemplate, p)
+	return output
 }

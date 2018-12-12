@@ -18,16 +18,13 @@ type Config struct {
 	Description string `json:"description" yaml:"description"`
 	// BaseURL is the base url for the blog.
 	BaseURL string `json:"baseURL" yaml:"baseURL"`
-
 	// PostsPath is the path to the posts to compile.
 	PostsPath string `json:"postsPath" yaml:"postsPath"`
-	// OutputPath is the compiled site path.
-	OutputPath string `json:"outputPath" yaml:"outputPath"`
-	// PostTemplate is the path to the post template file.
-	PostTemplate string `json:"postTemplate" yaml:"postTemplate"`
 	// PagesPath is the path to a folder with pages to compile.
 	// They are rendered and copied to the root of the output.
 	PagesPath string `json:"pagesPath" yaml:"pagesPath"`
+	// OutputPath is the compiled site path.
+	OutputPath string `json:"outputPath" yaml:"outputPath"`
 	// PatialsPath is the path to a folder with partials to include
 	// when rendering pages and the posts.
 	PartialsPath string `json:"partialsPath" yaml:"partialsPath"`
@@ -35,6 +32,15 @@ type Config struct {
 	StaticPath string `json:"staticPath" yaml:"staticPath"`
 	// ThumbnailCachePath is the path to the thumbnail cache.
 	ThumbnailCachePath string `json:"thumbnailCachePath" yaml:"thumbnailCachePath"`
+	// SlugTemplate is the template for post slugs.
+	// It defaults to "/{{ .Meta.Posted.Year }}/{{ .Meta.Posted.Month }}/{{ .Meta.Posted.Day }}/{{ .Meta.Title | slugify }}/"
+	SlugTemplate string `json:"slugTemplate" yaml:"slugTemplate"`
+	// PostTemplate is the path to the post template file.
+	// It is what is rendered when you go to /<POST_SLUG>/
+	PostTemplate string `json:"postTemplate" yaml:"postTemplate"`
+	// TagTemplate is the path to the tag template file.
+	// It is what is rendered when you go to /tags/:tag_name
+	TagTemplate string `json:"tagTemplate" yaml:"tagTemplate"`
 	// ImageSizes lets you set what size thumbnails to create from post files.
 	// This defaults to 2048px, 1024px, and 512px.
 	ImageSizes []int `json:"imageSizes" yaml:"imageSizes"`
@@ -78,6 +84,14 @@ func (c Config) OutputPathOrDefault() string {
 		return c.OutputPath
 	}
 	return constants.DefaultOutputPath
+}
+
+// SlugTemplateOrDefault returns the slug template or default.
+func (c Config) SlugTemplateOrDefault() string {
+	if c.SlugTemplate != "" {
+		return c.SlugTemplate
+	}
+	return constants.DefaultSlugTemplate
 }
 
 // PostTemplateOrDefault returns the single post template or a default.
