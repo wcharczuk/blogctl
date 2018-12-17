@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/wcharczuk/photoblog/pkg/constants"
+	"github.com/wcharczuk/blogctl/pkg/constants"
 )
 
 // Post is a single post item.

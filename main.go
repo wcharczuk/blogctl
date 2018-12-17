@@ -3,7 +3,8 @@ package main
 import (
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
-	"github.com/wcharczuk/photoblog/blogctl/cmd"
+
+	"github.com/wcharczuk/blogctl/pkg/cmd"
 )
 
 /*

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wcharczuk/photoblog/pkg/tiff"
+	"github.com/wcharczuk/blogctl/pkg/tiff"
 )
 
 // Reference Offsets

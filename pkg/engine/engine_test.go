@@ -6,8 +6,8 @@ import (
 
 	"github.com/blend/go-sdk/assert"
 
-	"github.com/wcharczuk/photoblog/pkg/config"
-	"github.com/wcharczuk/photoblog/pkg/model"
+	"github.com/wcharczuk/blogctl/pkg/config"
+	"github.com/wcharczuk/blogctl/pkg/model"
 )
 
 func TestEngineCreateSlugDefaults(t *testing.T) {

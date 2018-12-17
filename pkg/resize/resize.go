@@ -79,6 +79,9 @@ func Resize(width, height uint, img image.Image, interp InterpolationFunction) i
 	}
 
 	taps, kernel := interp.kernel()
+
+	// get the current number of CPUs
+	// 0 does not change the number of max procs, just returns the current setting.
 	cpus := runtime.GOMAXPROCS(0)
 	wg := sync.WaitGroup{}
 

@@ -17,12 +17,12 @@ import (
 	"github.com/blend/go-sdk/logger"
 	sdkTemplate "github.com/blend/go-sdk/template"
 
-	"github.com/wcharczuk/photoblog/pkg/config"
-	"github.com/wcharczuk/photoblog/pkg/constants"
-	"github.com/wcharczuk/photoblog/pkg/fileutil"
-	"github.com/wcharczuk/photoblog/pkg/model"
-	"github.com/wcharczuk/photoblog/pkg/resize"
-	"github.com/wcharczuk/photoblog/pkg/stringutil"
+	"github.com/wcharczuk/blogctl/pkg/config"
+	"github.com/wcharczuk/blogctl/pkg/constants"
+	"github.com/wcharczuk/blogctl/pkg/fileutil"
+	"github.com/wcharczuk/blogctl/pkg/model"
+	"github.com/wcharczuk/blogctl/pkg/resize"
+	"github.com/wcharczuk/blogctl/pkg/stringutil"
 )
 
 // New returns a new engine..

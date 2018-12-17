@@ -12,12 +12,11 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-
 	"github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/logger"
 
-	"github.com/wcharczuk/photoblog/pkg/aws"
-	"github.com/wcharczuk/photoblog/pkg/fileutil"
+	"github.com/wcharczuk/blogctl/pkg/aws"
+	"github.com/wcharczuk/blogctl/pkg/fileutil"
 )
 
 // New returns a new manager.

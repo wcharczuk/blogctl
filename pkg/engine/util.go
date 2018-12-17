@@ -16,9 +16,10 @@ import (
 
 	"github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/yaml"
-	"github.com/wcharczuk/photoblog/pkg/exif"
-	"github.com/wcharczuk/photoblog/pkg/model"
-	"github.com/wcharczuk/photoblog/pkg/stringutil"
+
+	"github.com/wcharczuk/blogctl/pkg/exif"
+	"github.com/wcharczuk/blogctl/pkg/model"
+	"github.com/wcharczuk/blogctl/pkg/stringutil"
 )
 
 // ListDirectory returns all the file infos within a given directory by path.

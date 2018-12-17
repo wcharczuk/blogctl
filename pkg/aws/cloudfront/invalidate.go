@@ -3,12 +3,12 @@ package cloudfront
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudfront"
 	"github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/uuid"
-	"github.com/wcharczuk/photoblog/pkg/aws"
 
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/wcharczuk/blogctl/pkg/aws"
 )
 
 // InvalidateMany invalidates a given set of paths for a distribution.

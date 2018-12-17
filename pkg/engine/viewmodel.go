@@ -1,8 +1,8 @@
 package engine
 
 import (
-	"github.com/wcharczuk/photoblog/pkg/config"
-	"github.com/wcharczuk/photoblog/pkg/model"
+	"github.com/wcharczuk/blogctl/pkg/config"
+	"github.com/wcharczuk/blogctl/pkg/model"
 )
 
 // TitleOrDefaultProvider is a type that provides a title.

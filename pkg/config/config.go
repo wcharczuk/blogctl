@@ -1,6 +1,6 @@
 package config
 
-import "github.com/wcharczuk/photoblog/pkg/constants"
+import "github.com/wcharczuk/blogctl/pkg/constants"
 
 // These are set by ldflags.
 var (

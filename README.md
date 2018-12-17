@@ -32,8 +32,11 @@ These are contained within the blog's `config.yml` (found at the root of the blo
 - `tagTemplate` Where the html template for each tag's posts lives (defaults to `layout/tag.html`)
 - `pagesPath` A path to a directory of pages to render (defaults to `layout/pages`). Typically includes `index.html`, or the root page.
 - `partialsPath` A path to a directory of partials to include when rendering pages or the `post` or `tag` template.
+- `staticPath` A path to a directory of static files to copy as is to the `outputPath`. Typically stuff like javascript and css files and other image assets.
 - `s3` Options for deploying to s3 like the `bucket` and the `region`.
 - `cloudfront` Options for caching with `cloudfront`, includes options like the `distribution`.
+
+There are some extra paths that
 
 # `blogctl` usage
 
