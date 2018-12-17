@@ -42,7 +42,7 @@ func (m Manager) GetKey(rootPath, workingPath string) string {
 }
 
 // SyncDirectory sync's a directory.
-// It returns a list of invalidated keys, and an error.
+// It returns a list of invalidated keys (i.e. keys to update or remove), and an error.
 func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string) ([]string, error) {
 	remoteETags := make(map[string]string)
 	localKeys := make(map[string]bool)
@@ -107,7 +107,10 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 			}); err != nil {
 				return err
 			}
-			invalidated = append(invalidated, key)
+			// only invalidate files we know to be present (not new files)
+			if ok {
+				invalidated = append(invalidated, key)
+			}
 		} else {
 			logger.MaybeInfof(m.Log, "skipping %s (unchanged)", key)
 		}
