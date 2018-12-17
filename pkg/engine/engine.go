@@ -22,6 +22,7 @@ import (
 	"github.com/wcharczuk/photoblog/pkg/fileutil"
 	"github.com/wcharczuk/photoblog/pkg/model"
 	"github.com/wcharczuk/photoblog/pkg/resize"
+	"github.com/wcharczuk/photoblog/pkg/stringutil"
 )
 
 // New returns a new engine..
@@ -220,7 +221,7 @@ func (e Engine) Render(data *model.Data) error {
 			return err
 		}
 		for index, tag := range data.Tags {
-			tagPath := filepath.Join("tags", tag.Tag)
+			tagPath := filepath.Join(outputPath, "tags", stringutil.Slugify(tag.Tag))
 			if err := MakeDir(tagPath); err != nil {
 				return exception.New(err)
 			}
