@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
 
@@ -12,6 +15,7 @@ general usage
 
 blogctl
 	init : touch an empy instance of the photo blog
+	new : create a new post
 	build : compile the posts into static pages
 	deploy : push it to aws/gcp/*
 	server : start a local server against the output folder
@@ -26,12 +30,14 @@ func main() {
 	}
 	configPath := blogctl.PersistentFlags().String("config", "config.yml", "The config file path")
 
-	log := logger.All().WithHeading("photoblog")
+	log := logger.All().WithHeading("blogctl")
 
 	blogctl.AddCommand(cmd.Init(configPath, log))
 	blogctl.AddCommand(cmd.New(configPath, log))
 	blogctl.AddCommand(cmd.Build(configPath, log))
 	blogctl.AddCommand(cmd.Deploy(configPath, log))
 	blogctl.AddCommand(cmd.Server(configPath, log))
-	blogctl.Execute()
+	if err := blogctl.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
 }
