@@ -237,7 +237,7 @@ func (e Engine) Render(data *model.Data) error {
 		}
 	}
 
-	staticPath := e.Config.StaticPathOrDefault()
+	staticPath := e.Config.StaticsPathOrDefault()
 	if err := Copy(staticPath, outputPath); err != nil {
 		return err
 	}
@@ -338,7 +338,7 @@ func (e Engine) ReadPartials() ([]string, error) {
 	for _, partial := range partialFiles {
 		contents, err := ioutil.ReadFile(filepath.Join(partialsPath, partial.Name()))
 		if err != nil {
-			return nil, exception.New(err)
+			return nil, exception.New(err).WithMessagef("partial: %s", partial)
 		}
 		partials = append(partials, string(contents))
 	}
@@ -349,20 +349,20 @@ func (e Engine) ReadPartials() ([]string, error) {
 func (e Engine) CompileTemplate(templatePath string, partials []string) (*template.Template, error) {
 	contents, err := ioutil.ReadFile(templatePath)
 	if err != nil {
-		return nil, exception.New(err)
+		return nil, exception.New(err).WithMessagef("template path: %s", templatePath)
 	}
 
 	tmp := template.New("").Funcs(sdkTemplate.Funcs.FuncMap())
 	for _, partial := range partials {
 		_, err := tmp.Parse(partial)
 		if err != nil {
-			return nil, exception.New(err)
+			return nil, exception.New(err).WithMessagef("template path: %s", templatePath)
 		}
 	}
 
 	final, err := tmp.Parse(string(contents))
 	if err != nil {
-		return nil, exception.New(err)
+		return nil, exception.New(err).WithMessagef("template path: %s", templatePath)
 	}
 	return final, nil
 }

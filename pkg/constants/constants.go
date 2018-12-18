@@ -5,8 +5,8 @@ const (
 	DefaultOutputPath = "dist"
 	// DefaultPostsPath is the default source path for post images.
 	DefaultPostsPath = "posts"
-	// DefaultStaticPath is the default source path static files.
-	DefaultStaticPath = "static"
+	// DefaultStaticsPath is the default source path static files.
+	DefaultStaticsPath = "static"
 	// DefaultThumbnailCachePath is the default thumbnail cache path.
 	DefaultThumbnailCachePath = "thumbnails"
 	// DefaultPagesPath is the default partials path.
