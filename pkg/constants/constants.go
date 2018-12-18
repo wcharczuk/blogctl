@@ -2,23 +2,23 @@ package constants
 
 const (
 	// DefaultOutputPath is the default output path.
-	DefaultOutputPath = "dist"
+	DefaultOutputPath = "./dist"
 	// DefaultPostsPath is the default source path for post images.
-	DefaultPostsPath = "posts"
+	DefaultPostsPath = "./posts"
 	// DefaultStaticsPath is the default source path static files.
-	DefaultStaticsPath = "static"
+	DefaultStaticsPath = "./static"
 	// DefaultThumbnailCachePath is the default thumbnail cache path.
-	DefaultThumbnailCachePath = "thumbnails"
+	DefaultThumbnailCachePath = "./thumbnails"
 	// DefaultPagesPath is the default partials path.
-	DefaultPagesPath = "layout/pages"
+	DefaultPagesPath = "./layout/pages"
 	// DefaultPartialsPath is the default partials path.
-	DefaultPartialsPath = "layout/partials"
+	DefaultPartialsPath = "./layout/partials"
 	// DefaultConfigPath is the default config file name.
-	DefaultConfigPath = "config.yml"
+	DefaultConfigPath = "./config.yml"
 	// DefaultPostTemplate is the default post template path.
-	DefaultPostTemplate = "layout/post.html"
+	DefaultPostTemplate = "./layout/post.html"
 	// DefaultTagTemplate is the default tag template path.
-	DefaultTagTemplate = "layout/tag.html"
+	DefaultTagTemplate = "./layout/tag.html"
 )
 
 // DefaultSlugTemplate is the default slug format.

@@ -33,16 +33,26 @@ type Manager struct {
 	Config            *aws.Config
 	Session           *session.Session
 	PutObjectDefaults File
+	DryRun            bool
 }
 
 // GetKey returns the relative path for a given file.
 func (m Manager) GetKey(rootPath, workingPath string) string {
+	if !strings.HasPrefix(workingPath, "./") {
+		workingPath = "./" + workingPath
+	}
+	if !strings.HasPrefix(rootPath, "./") {
+		rootPath = "./" + rootPath
+	}
 	return strings.TrimPrefix(workingPath, rootPath)
 }
 
 // SyncDirectory sync's a directory.
 // It returns a list of invalidated keys (i.e. keys to update or remove), and an error.
 func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string) ([]string, error) {
+	if m.DryRun {
+		logger.MaybeSyncDebugf(m.Log, "dry run; not realizing changes")
+	}
 	remoteETags := make(map[string]string)
 	localKeys := make(map[string]bool)
 	invalidated := []string{}
@@ -91,27 +101,29 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 		}
 
 		if !ok || remoteETag != localETag {
-			logger.MaybeInfof(m.Log, "putting %s", key)
+			logger.MaybeSyncInfof(m.Log, "putting %s", key)
 
 			contentType, err := fileutil.DetectContentType(currentPath)
 			if err != nil {
 				return err
 			}
 
-			if err := m.Put(ctx, File{
-				FilePath:    currentPath,
-				Key:         key,
-				Bucket:      bucket,
-				ContentType: contentType,
-			}); err != nil {
-				return err
+			if !m.DryRun {
+				if err := m.Put(ctx, File{
+					FilePath:    currentPath,
+					Key:         key,
+					Bucket:      bucket,
+					ContentType: contentType,
+				}); err != nil {
+					return err
+				}
 			}
 			// only invalidate files we know to be present (not new files)
 			if ok {
 				invalidated = append(invalidated, key)
 			}
 		} else {
-			logger.MaybeInfof(m.Log, "skipping %s (unchanged)", key)
+			logger.MaybeSyncInfof(m.Log, "skipping %s (unchanged)", key)
 		}
 
 		return nil
@@ -128,9 +140,11 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 		}
 
 		if _, ok := localKeys[key]; !ok {
-			logger.MaybeInfof(m.Log, "removing remote %s", remoteFile.Key)
-			if err := m.Delete(ctx, bucket, remoteFile.Key); err != nil {
-				return nil, err
+			logger.MaybeSyncInfof(m.Log, "removing remote %s", remoteFile.Key)
+			if !m.DryRun {
+				if err := m.Delete(ctx, bucket, remoteFile.Key); err != nil {
+					return nil, err
+				}
 			}
 			invalidated = append(invalidated, key)
 		}

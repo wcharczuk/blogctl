@@ -14,6 +14,7 @@ import (
 // Deploy returns the deploy command.
 func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 	var bucket, region *string
+	var dryRun *bool
 	cmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy the photoblog",
@@ -40,6 +41,7 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 			mgr := s3.New(&aws.Config{
 				Region: *region,
 			})
+			mgr.DryRun = *dryRun
 			mgr.Log = log
 			mgr.PutObjectDefaults = s3.File{
 				ACL: s3.ACLPublicRead,
@@ -50,15 +52,20 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 				log.SyncFatal(err)
 			}
 
-			if !cfg.Cloudfront.IsZero() && len(paths) > 0 {
-				log.SyncInfof("cloudfront invalidating %d paths", len(paths))
-				if err := cloudfront.InvalidateMany(context.Background(), mgr.Session, cfg.Cloudfront.Distribution, paths...); err != nil {
-					log.SyncFatalExit(err)
+			if !mgr.DryRun {
+				if !cfg.Cloudfront.IsZero() && len(paths) > 0 {
+					log.SyncInfof("cloudfront invalidating %d paths", len(paths))
+					if err := cloudfront.InvalidateMany(context.Background(), mgr.Session, cfg.Cloudfront.Distribution, paths...); err != nil {
+						log.SyncFatalExit(err)
+					}
 				}
+			} else {
+				log.SyncDebugf("dry run; would invalidate %d files", len(paths))
 			}
 		},
 	}
 
+	dryRun = cmd.Flags().Bool("dry-run", false, "If we should only print the plan, and not realize changes")
 	bucket = cmd.Flags().String("bucket", "", "An optional specific bucket (in the form s3://...)")
 	region = cmd.Flags().String("region", "", "An optional aws region")
 	return cmd
