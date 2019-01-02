@@ -11,13 +11,13 @@ import (
 func TestPartitionPosts(t *testing.T) {
 	assert := assert.New(t)
 
-	_, err := partitionPosts(0, 0, nil)
+	_, err := partition(0, 0, nil)
 	assert.True(exception.Is(err, ErrPartitionCountInvalid))
 
-	_, err = partitionPosts(1, 1, nil)
+	_, err = partition(1, 1, nil)
 	assert.True(exception.Is(err, ErrPartitionIndexTooLarge))
 
-	_, err = partitionPosts(2, 1, nil)
+	_, err = partition(2, 1, nil)
 	assert.True(exception.Is(err, ErrPartitionIndexTooLarge))
 
 	posts := []model.Post{
@@ -30,12 +30,12 @@ func TestPartitionPosts(t *testing.T) {
 		{Meta: model.Meta{Title: "seven"}},
 	}
 
-	_, err = partitionPosts(0, 8, posts)
+	_, err = partition(0, 8, posts)
 	assert.True(exception.Is(err, ErrPartitionCountTooLarge))
 
-	partition0, err := partitionPosts(0, 2, posts)
+	partition0, err := partition(0, 2, posts)
 	assert.Nil(err)
-	partition1, err := partitionPosts(1, 2, posts)
+	partition1, err := partition(1, 2, posts)
 	assert.Nil(err)
 
 	assert.Len(partition0, 4)

@@ -12,7 +12,7 @@ import (
 // ViewFuncs is the template funcs.
 func ViewFuncs() template.FuncMap {
 	base := sdkTemplate.Funcs.FuncMap()
-	base["partition"] = partitionPosts
+	base["partition"] = partition
 	return base
 }
 
@@ -39,7 +39,7 @@ const (
 	ErrPartitionCountInvalid  exception.Class = "partition count invalid; must be greater than 1"
 )
 
-func partitionPosts(index, partitions int, posts []model.Post) ([]model.Post, error) {
+func partition(index, partitions int, posts []model.Post) ([]model.Post, error) {
 	if partitions < 1 {
 		return nil, exception.New(ErrPartitionCountInvalid)
 	}
