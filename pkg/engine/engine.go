@@ -15,7 +15,6 @@ import (
 
 	"github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/logger"
-	sdkTemplate "github.com/blend/go-sdk/template"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/constants"
@@ -352,7 +351,7 @@ func (e Engine) CompileTemplate(templatePath string, partials []string) (*templa
 		return nil, exception.New(err).WithMessagef("template path: %s", templatePath)
 	}
 
-	tmp := template.New("").Funcs(sdkTemplate.Funcs.FuncMap())
+	tmp := template.New("").Funcs(ViewFuncs())
 	for _, partial := range partials {
 		_, err := tmp.Parse(partial)
 		if err != nil {
