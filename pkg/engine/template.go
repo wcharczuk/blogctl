@@ -40,9 +40,6 @@ const (
 )
 
 func partition(index, partitions int, posts []model.Post) ([]model.Post, error) {
-	if len(posts) < 2 {
-		return posts, nil
-	}
 	if partitions < 1 {
 		return nil, exception.New(ErrPartitionCountInvalid)
 	}
