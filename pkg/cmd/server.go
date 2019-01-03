@@ -24,6 +24,12 @@ func Server(configPath *string, log *logger.Logger) *cobra.Command {
 			app := web.New().WithBindAddr(*bindAddr)
 			app.WithLogger(log)
 			app.ServeStatic("/", files)
+			app.SetStaticRewriteRule("/", "/$", func(filePath string, matchedPieces ...string) string {
+				if len(matchedPieces) > 0 {
+					return matchedPieces[0] + "index.html"
+				}
+				return filePath
+			})
 			if err := graceful.Shutdown(app); err != nil {
 				log.SyncFatalExit(err)
 			}
