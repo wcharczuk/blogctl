@@ -27,12 +27,12 @@ func ParseTemplate(literal string) (*template.Template, error) {
 func RenderString(tmp *template.Template, vm interface{}) (string, error) {
 	buffer := new(bytes.Buffer)
 	if err := tmp.Execute(buffer, vm); err != nil {
-		return "", err
+		return "", exception.New(err)
 	}
 	return buffer.String(), nil
 }
 
-// Errors
+// Partition Errors
 const (
 	ErrPartitionCountTooLarge exception.Class = "partition count greater than number of posts"
 	ErrPartitionIndexTooLarge exception.Class = "partition index greater than number of partitions"
@@ -40,19 +40,16 @@ const (
 )
 
 func partition(index, partitions int, posts []model.Post) ([]model.Post, error) {
+	if len(posts) < 2 {
+		return posts, nil
+	}
 	if partitions < 1 {
 		return nil, exception.New(ErrPartitionCountInvalid)
 	}
 	if index < 0 || index >= partitions {
 		return nil, exception.New(ErrPartitionIndexTooLarge)
 	}
-	if partitions > len(posts) {
-		return nil, exception.New(ErrPartitionCountTooLarge)
-	}
 	if partitions == 1 {
-		return posts, nil
-	}
-	if len(posts) < 2 {
 		return posts, nil
 	}
 
