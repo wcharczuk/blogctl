@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/alecthomas/template"
 	"github.com/wcharczuk/blogctl/pkg/constants"
 )
 
@@ -15,9 +16,9 @@ type Post struct {
 	Image        Image  `json:"image" yaml:"image"`
 	Meta         Meta   `json:"meta" yaml:"meta"`
 
-	Index    int   `json:"index" yaml:"index"`
-	Previous *Post `json:"-" yaml:"-"`
-	Next     *Post `json:"-" yaml:"-"`
+	Previous *Post              `json:"-" yaml:"-"`
+	Next     *Post              `json:"-" yaml:"-"`
+	Template *template.Template `json:"-"`
 }
 
 // IsZero returns if the post is set.

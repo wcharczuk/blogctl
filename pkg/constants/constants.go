@@ -1,24 +1,26 @@
 package constants
 
 const (
+	// DefaultConfigPath is the default config file name.
+	DefaultConfigPath = "./config.yml"
 	// DefaultOutputPath is the default output path.
 	DefaultOutputPath = "./dist"
 	// DefaultPostsPath is the default source path for post images.
 	DefaultPostsPath = "./posts"
 	// DefaultStaticsPath is the default source path static files.
 	DefaultStaticsPath = "./static"
+	// DefaultLayoutPath is the default layout path.
+	DefaultLayoutPath = "./layout"
 	// DefaultThumbnailCachePath is the default thumbnail cache path.
 	DefaultThumbnailCachePath = "./thumbnails"
 	// DefaultPagesPath is the default partials path.
 	DefaultPagesPath = "./layout/pages"
 	// DefaultPartialsPath is the default partials path.
 	DefaultPartialsPath = "./layout/partials"
-	// DefaultConfigPath is the default config file name.
-	DefaultConfigPath = "./config.yml"
-	// DefaultPostTemplate is the default post template path.
-	DefaultPostTemplate = "./layout/post.html"
-	// DefaultTagTemplate is the default tag template path.
-	DefaultTagTemplate = "./layout/tag.html"
+	// DefaultPostTemplatePath is the default post template path.
+	DefaultPostTemplatePath = "./layout/post.html"
+	// DefaultTagTemplatePath is the default tag template path.
+	DefaultTagTemplatePath = "./layout/tag.html"
 )
 
 // DefaultSlugTemplate is the default slug format.
@@ -41,6 +43,9 @@ const (
 )
 
 // DefaultImageSizes are the default resize dimensions.
+// The size given will be the largest dimension of the final image.
+// If the image is landscape, it will be the width.
+// If the image is portrait, it will be the height.
 var (
 	DefaultImageSizes = []int{
 		SizeLarge,
@@ -59,12 +64,16 @@ const (
 const (
 	ExtensionJPG  = ".jpg"
 	ExtensionJPEG = ".jpeg"
+	ExtensionHTML = ".html"
 )
 
-// ImageExtensions are known image extensions.
+// Known Extensions
 var (
 	ImageExtensions = []string{
 		ExtensionJPG,
 		ExtensionJPEG,
+	}
+	TemplateExtension = []string{
+		ExtensionHTML,
 	}
 )

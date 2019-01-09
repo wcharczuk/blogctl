@@ -29,12 +29,14 @@ func Init(configPath *string, log *logger.Logger) *cobra.Command {
 			fmt.Println("Initializing a new blog")
 			fmt.Println("Please provide the fields fo the `config.yml`")
 			fmt.Println("They will be prompted as `Field (explanation) [default value]`")
-			config := &config.Config{}
+
+			// create a new config
+			config := new(config.Config)
 			fields := config.Fields()
 			var value string
 			for _, field := range fields {
 				if field.Default != "" {
-					value = sh.Promptf("%s [%s]: ", field.Prompt, field.Default)
+					value = sh.Promptf("%s [default %s]: ", field.Prompt, field.Default)
 				} else {
 					value = sh.Promptf("%s: ", field.Prompt)
 				}
@@ -63,7 +65,7 @@ func Init(configPath *string, log *logger.Logger) *cobra.Command {
 			if err := engine.MakeDir(filepath.Join(name, config.StaticsPathOrDefault(), "css")); err != nil {
 				sh.Fatal(err)
 			}
-			if err := WriteYAML(filepath.Join(name, constants.DefaultConfigPath), config); err != nil {
+			if err := engine.WriteYAML(filepath.Join(name, *configPath), config); err != nil {
 				sh.Fatal(err)
 			}
 
@@ -86,8 +88,6 @@ func Init(configPath *string, log *logger.Logger) *cobra.Command {
 			if err := engine.WriteFile(filepath.Join(name, config.StaticsPathOrDefault(), "css/site.css"), []byte(siteCSS)); err != nil {
 				sh.Fatal(err)
 			}
-
-			/* create a first post ? */
 		},
 	}
 }

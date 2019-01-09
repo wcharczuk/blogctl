@@ -1,0 +1,14 @@
+{{ define "header" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>{{ .TitleOrDefault }}</title>
+	<meta name="author" content="{{ .Config.Author }}">
+	<meta name="description" content="{{ .Config.Description }}">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+	<div class="content">
+{{ end }}

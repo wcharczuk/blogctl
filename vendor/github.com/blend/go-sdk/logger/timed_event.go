@@ -15,7 +15,7 @@ var (
 )
 
 // Timedf returns a timed message event.
-func Timedf(flag Flag, elapsed time.Duration, format string, args ...Any) *TimedEvent {
+func Timedf(flag Flag, elapsed time.Duration, format string, args ...interface{}) *TimedEvent {
 	return &TimedEvent{
 		EventMeta: NewEventMeta(flag),
 		message:   fmt.Sprintf(format, args...),

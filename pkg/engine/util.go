@@ -17,10 +17,22 @@ import (
 	"github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/yaml"
 
+	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/exif"
 	"github.com/wcharczuk/blogctl/pkg/model"
 	"github.com/wcharczuk/blogctl/pkg/stringutil"
 )
+
+// ReadConfig reads a config at a given path as yaml.
+func ReadConfig(configPath string) (config config.Config, err error) {
+	contents, readErr := ioutil.ReadFile(configPath)
+	if readErr != nil {
+		err = exception.New(readErr)
+		return
+	}
+	err = exception.New(yaml.Unmarshal(contents, &config))
+	return
+}
 
 // ListDirectory returns all the file infos within a given directory by path.
 func ListDirectory(path string) (files []os.FileInfo, err error) {
@@ -77,7 +89,7 @@ func ReadImage(path string) (model.Image, error) {
 		return model.Image{}, err
 	}
 
-	exifData, err := GenerateExifData(rawExifData)
+	exifData, err := GetExifData(rawExifData)
 	if err != nil {
 		return model.Image{}, err
 	}
@@ -89,8 +101,8 @@ func ReadImage(path string) (model.Image, error) {
 	}, nil
 }
 
-// GenerateExifData generates the parsed exif data for the post.
-func GenerateExifData(exifData *exif.Exif) (data model.Exif, err error) {
+// GetExifData generates the parsed exif data for the post.
+func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 	// fnumber
 	if tag, tagErr := exifData.Get(exif.FNumber); tagErr == nil {
 		nominator, denominator, ratErr := tag.Rat2(0)
@@ -158,8 +170,8 @@ func GenerateExifData(exifData *exif.Exif) (data model.Exif, err error) {
 	return
 }
 
-// GetExifData gets exif data from a file on disk.
-func GetExifData(imagePath string) (*exif.Exif, error) {
+// GenerateExifData gets exif data from a file on disk.
+func GenerateExifData(imagePath string) (*exif.Exif, error) {
 	contents, err := ioutil.ReadFile(imagePath)
 	if err != nil {
 		return nil, exception.New(err)
@@ -176,7 +188,7 @@ func GetExifData(imagePath string) (*exif.Exif, error) {
 // ExtractCaptureDate extracts the capture date from an image file by path.
 func ExtractCaptureDate(imagePath string) (captureDate time.Time, err error) {
 	var exifData *exif.Exif
-	exifData, err = GetExifData(imagePath)
+	exifData, err = GenerateExifData(imagePath)
 	if err != nil {
 		return
 	}
@@ -191,5 +203,14 @@ func MakeDir(path string) error {
 
 // WriteFile writes a file with default perms.
 func WriteFile(path string, contents []byte) error {
+	return exception.New(ioutil.WriteFile(path, contents, 0666))
+}
+
+// WriteYAML writes an object as yaml to disk.
+func WriteYAML(path string, obj interface{}) error {
+	contents, err := yaml.Marshal(obj)
+	if err != nil {
+		return err
+	}
 	return exception.New(ioutil.WriteFile(path, contents, 0666))
 }

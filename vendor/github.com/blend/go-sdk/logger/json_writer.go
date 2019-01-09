@@ -33,7 +33,7 @@ var (
 )
 
 // JSONObj is a type alias for map[string]Any
-type JSONObj = Values
+type JSONObj = map[string]interface{}
 
 // JSONWritable is a type with a custom formater for json writing.
 type JSONWritable interface {

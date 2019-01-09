@@ -75,7 +75,7 @@ func (sc *SubContext) Annotations() map[string]string {
 }
 
 // Sillyf writes a message.
-func (sc *SubContext) Sillyf(format string, args ...Any) {
+func (sc *SubContext) Sillyf(format string, args ...interface{}) {
 	msg := Messagef(Silly, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -84,7 +84,7 @@ func (sc *SubContext) Sillyf(format string, args ...Any) {
 }
 
 // SyncSillyf synchronously writes a message.
-func (sc *SubContext) SyncSillyf(format string, args ...Any) {
+func (sc *SubContext) SyncSillyf(format string, args ...interface{}) {
 	msg := Messagef(Silly, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -93,7 +93,7 @@ func (sc *SubContext) SyncSillyf(format string, args ...Any) {
 }
 
 // Infof writes a message.
-func (sc *SubContext) Infof(format string, args ...Any) {
+func (sc *SubContext) Infof(format string, args ...interface{}) {
 	msg := Messagef(Info, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -102,7 +102,7 @@ func (sc *SubContext) Infof(format string, args ...Any) {
 }
 
 // SyncInfof synchronously writes a message.
-func (sc *SubContext) SyncInfof(format string, args ...Any) {
+func (sc *SubContext) SyncInfof(format string, args ...interface{}) {
 	msg := Messagef(Info, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -111,7 +111,7 @@ func (sc *SubContext) SyncInfof(format string, args ...Any) {
 }
 
 // Debugf writes a message.
-func (sc *SubContext) Debugf(format string, args ...Any) {
+func (sc *SubContext) Debugf(format string, args ...interface{}) {
 	msg := Messagef(Debug, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -120,7 +120,7 @@ func (sc *SubContext) Debugf(format string, args ...Any) {
 }
 
 // SyncDebugf synchronously writes a message.
-func (sc *SubContext) SyncDebugf(format string, args ...Any) {
+func (sc *SubContext) SyncDebugf(format string, args ...interface{}) {
 	msg := Messagef(Debug, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -129,7 +129,7 @@ func (sc *SubContext) SyncDebugf(format string, args ...Any) {
 }
 
 // Warningf writes an error message.
-func (sc *SubContext) Warningf(format string, args ...Any) {
+func (sc *SubContext) Warningf(format string, args ...interface{}) {
 	msg := Errorf(Warning, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -138,16 +138,17 @@ func (sc *SubContext) Warningf(format string, args ...Any) {
 }
 
 // Warning writes an error message.
-func (sc *SubContext) Warning(err error) {
+func (sc *SubContext) Warning(err error) error {
 	msg := NewErrorEvent(Warning, err)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
 	sc.injectAnnotations(msg)
 	sc.log.Trigger(msg)
+	return err
 }
 
 // SyncWarningf synchronously writes an error message.
-func (sc *SubContext) SyncWarningf(format string, args ...Any) {
+func (sc *SubContext) SyncWarningf(format string, args ...interface{}) {
 	msg := Errorf(Warning, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -156,16 +157,17 @@ func (sc *SubContext) SyncWarningf(format string, args ...Any) {
 }
 
 // SyncWarning writes a message.
-func (sc *SubContext) SyncWarning(err error) {
+func (sc *SubContext) SyncWarning(err error) error {
 	msg := NewErrorEvent(Warning, err)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
 	sc.injectAnnotations(msg)
 	sc.log.SyncTrigger(msg)
+	return err
 }
 
 // Errorf writes an error  message.
-func (sc *SubContext) Errorf(format string, args ...Any) {
+func (sc *SubContext) Errorf(format string, args ...interface{}) {
 	msg := Errorf(Error, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -174,16 +176,17 @@ func (sc *SubContext) Errorf(format string, args ...Any) {
 }
 
 // Error writes an error message.
-func (sc *SubContext) Error(err error) {
+func (sc *SubContext) Error(err error) error {
 	msg := NewErrorEvent(Error, err)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
 	sc.injectAnnotations(msg)
 	sc.log.Trigger(msg)
+	return err
 }
 
 // SyncErrorf synchronously writes an error message.
-func (sc *SubContext) SyncErrorf(format string, args ...Any) {
+func (sc *SubContext) SyncErrorf(format string, args ...interface{}) {
 	msg := Errorf(Error, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -192,16 +195,17 @@ func (sc *SubContext) SyncErrorf(format string, args ...Any) {
 }
 
 // SyncError writes an error message.
-func (sc *SubContext) SyncError(err error) {
+func (sc *SubContext) SyncError(err error) error {
 	msg := NewErrorEvent(Error, err)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
 	sc.injectAnnotations(msg)
 	sc.log.SyncTrigger(msg)
+	return err
 }
 
 // Fatalf writes an error  message.
-func (sc *SubContext) Fatalf(format string, args ...Any) {
+func (sc *SubContext) Fatalf(format string, args ...interface{}) {
 	msg := Errorf(Fatal, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -210,16 +214,17 @@ func (sc *SubContext) Fatalf(format string, args ...Any) {
 }
 
 // Fatal writes an error message.
-func (sc *SubContext) Fatal(err error) {
+func (sc *SubContext) Fatal(err error) error {
 	msg := NewErrorEvent(Fatal, err)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
 	sc.injectAnnotations(msg)
 	sc.log.Trigger(msg)
+	return err
 }
 
 // SyncFatalf synchronously writes an error message.
-func (sc *SubContext) SyncFatalf(format string, args ...Any) {
+func (sc *SubContext) SyncFatalf(format string, args ...interface{}) {
 	msg := Errorf(Fatal, format, args...)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
@@ -228,12 +233,13 @@ func (sc *SubContext) SyncFatalf(format string, args ...Any) {
 }
 
 // SyncFatal writes an error message.
-func (sc *SubContext) SyncFatal(err error) {
+func (sc *SubContext) SyncFatal(err error) error {
 	msg := NewErrorEvent(Fatal, err)
 	sc.injectHeadings(msg)
 	sc.injectLabels(msg)
 	sc.injectAnnotations(msg)
 	sc.log.SyncTrigger(msg)
+	return err
 }
 
 // Trigger triggers listeners asynchronously.

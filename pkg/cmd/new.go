@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -26,7 +27,7 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			imagePath := args[0]
 
-			config, err := ReadConfig(*configPath)
+			config, err := engine.ReadConfig(*configPath)
 			if err != nil {
 				log.SyncFatalExit(err)
 			}
@@ -49,12 +50,14 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 			}
 
 			path := fmt.Sprintf("%s/%s-%s", config.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
-			log.Infof("writing new post to %s", path)
+			log.SubContext("new").Infof("writing new post to %s", path)
 			if err := engine.MakeDir(path); err != nil {
-				log.SyncFatalExit(err)
+				log.SubContext("new").SyncFatal(err)
+				os.Exit(1)
 			}
 			if err := engine.Copy(imagePath, filepath.Join(path, filepath.Base(imagePath))); err != nil {
-				log.SyncFatalExit(err)
+				log.SubContext("new").SyncFatal(err)
+				os.Exit(1)
 			}
 
 			var metaTags []string
@@ -67,8 +70,9 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 				Posted:   postedDate,
 				Tags:     metaTags,
 			}
-			if err := WriteYAML(filepath.Join(path, constants.FileMeta), meta); err != nil {
-				log.SyncFatalExit(err)
+			if err := engine.WriteYAML(filepath.Join(path, constants.FileMeta), meta); err != nil {
+				log.SubContext("new").SyncFatal(err)
+				os.Exit(1)
 			}
 		},
 	}

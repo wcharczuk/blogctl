@@ -16,7 +16,7 @@ var (
 )
 
 // Errorf returns a new error event based on format and arguments.
-func Errorf(flag Flag, format string, args ...Any) *ErrorEvent {
+func Errorf(flag Flag, format string, args ...interface{}) *ErrorEvent {
 	return &ErrorEvent{
 		EventMeta: NewEventMeta(flag),
 		err:       fmt.Errorf(format, args...),
@@ -32,7 +32,7 @@ func NewErrorEvent(flag Flag, err error) *ErrorEvent {
 }
 
 // NewErrorEventWithState returns a new error event with state.
-func NewErrorEventWithState(flag Flag, err error, state Any) *ErrorEvent {
+func NewErrorEventWithState(flag Flag, err error, state interface{}) *ErrorEvent {
 	return &ErrorEvent{
 		EventMeta: NewEventMeta(flag),
 		err:       err,
@@ -54,7 +54,7 @@ type ErrorEvent struct {
 	*EventMeta
 
 	err   error
-	state Any
+	state interface{}
 }
 
 // IsError indicates if we should write to the error writer or not.
@@ -110,13 +110,13 @@ func (e *ErrorEvent) Err() error {
 }
 
 // WithState sets the state.
-func (e *ErrorEvent) WithState(state Any) *ErrorEvent {
+func (e *ErrorEvent) WithState(state interface{}) *ErrorEvent {
 	e.state = state
 	return e
 }
 
 // State returns underlying state, typically an http.Request.
-func (e *ErrorEvent) State() Any {
+func (e *ErrorEvent) State() interface{} {
 	return e.state
 }
 
@@ -127,7 +127,7 @@ func (e *ErrorEvent) WriteText(formatter TextFormatter, buf *bytes.Buffer) {
 
 // WriteJSON implements JSONWritable.
 func (e *ErrorEvent) WriteJSON() JSONObj {
-	var errorJSON Any
+	var errorJSON interface{}
 	if _, ok := e.err.(json.Marshaler); ok {
 		errorJSON = e.err
 	} else {

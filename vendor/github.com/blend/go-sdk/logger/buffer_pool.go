@@ -8,7 +8,7 @@ import (
 // NewBufferPool returns a new BufferPool.
 func NewBufferPool(bufferSize int) *BufferPool {
 	return &BufferPool{
-		Pool: sync.Pool{New: func() Any {
+		Pool: sync.Pool{New: func() interface{} {
 			b := bytes.NewBuffer(make([]byte, bufferSize))
 			b.Reset()
 			return b

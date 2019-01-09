@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/wcharczuk/blogctl/pkg/engine"
 
 	"github.com/blend/go-sdk/graceful"
 	"github.com/blend/go-sdk/logger"
@@ -12,10 +13,12 @@ import (
 func Server(configPath *string, log *logger.Logger) *cobra.Command {
 	var bindAddr *string
 	cmd := &cobra.Command{
-		Use:   "server",
-		Short: "Start a static fileserver",
+		Use:     "server",
+		Aliases: []string{"s", "server"},
+		Short:   "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
-			config, err := ReadConfig(*configPath)
+
+			config, err := engine.ReadConfig(*configPath)
 			if err != nil {
 				log.SyncFatalExit(err)
 			}

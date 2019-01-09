@@ -34,7 +34,7 @@ func New(cfg config.Config) *Engine {
 // Engine returns a
 type Engine struct {
 	Config config.Config
-	Log    *logger.Logger
+	Log    logger.FullReceiver
 }
 
 //
@@ -42,23 +42,23 @@ type Engine struct {
 //
 
 // WithLogger sets the logger (optional).
-func (e *Engine) WithLogger(log *logger.Logger) *Engine {
+func (e *Engine) WithLogger(log logger.FullReceiver) *Engine {
 	e.Log = log
 	return e
 }
 
 // Generate generates the blog to the given output directory.
 func (e Engine) Generate() error {
-	data, err := e.GenerateData()
-	if err != nil {
-		return err
-	}
-
 	if err := e.InitializeOutputPath(); err != nil {
 		return err
 	}
 
 	if err := e.InitializeThumbnailCache(); err != nil {
+		return err
+	}
+
+	data, err := e.DiscoverPosts()
+	if err != nil {
 		return err
 	}
 
@@ -87,8 +87,8 @@ func (e Engine) InitializeThumbnailCache() error {
 	return MakeDir(e.Config.ThumbnailCachePathOrDefault())
 }
 
-// GenerateData generates the blog data.
-func (e Engine) GenerateData() (*model.Data, error) {
+// DiscoverPosts generates the blog data.
+func (e Engine) DiscoverPosts() (*model.Data, error) {
 	slugTemplate, err := e.ParseSlugTemplate()
 	if err != nil {
 		return nil, err
@@ -99,7 +99,7 @@ func (e Engine) GenerateData() (*model.Data, error) {
 		Author:  e.Config.AuthorOrDefault(),
 		BaseURL: e.Config.BaseURLOrDefault(),
 	}
-	tags := make(map[string]*model.TagPosts)
+	tags := make(map[string]*model.Tag)
 	imagesPath := e.Config.PostsPathOrDefault()
 
 	logger.MaybeSyncInfof(e.Log, "searching `%s` for images as posts", imagesPath)
@@ -112,18 +112,23 @@ func (e Engine) GenerateData() (*model.Data, error) {
 		}
 		if info.IsDir() {
 			logger.MaybeSyncInfof(e.Log, "reading post `%s`", currentPath)
-			post, err := e.ReadImage(slugTemplate, currentPath)
+
+			// check if we have an image
+			post, err := e.GeneratePost(slugTemplate, currentPath)
 			if err != nil {
 				return err
 			}
 			output.Posts = append([]model.Post{*post}, output.Posts...)
-			for _, tag := range post.Meta.Tags {
-				if group, ok := tags[tag]; ok {
-					group.Posts = append(group.Posts, *post)
-				} else {
-					tags[tag] = &model.TagPosts{
-						Tag:   tag,
-						Posts: []model.Post{*post},
+
+			if !e.Config.SkipTags {
+				for _, tag := range post.Meta.Tags {
+					if tagPosts, ok := tags[tag]; ok {
+						tagPosts.Posts = append(tagPosts.Posts, *post)
+					} else {
+						tags[tag] = &model.Tag{
+							Tag:   tag,
+							Posts: []model.Post{*post},
+						}
 					}
 				}
 			}
@@ -134,8 +139,12 @@ func (e Engine) GenerateData() (*model.Data, error) {
 		return nil, err
 	}
 
+	// sort by metadata posted date
+	// we don't really care about directory / filesystem order
+	sort.Sort(model.Posts(output.Posts))
+
+	// create previous and next links for each post.
 	for index := range output.Posts {
-		output.Posts[index].Index = index
 		if index > 0 {
 			output.Posts[index].Previous = &output.Posts[index-1]
 		}
@@ -144,11 +153,14 @@ func (e Engine) GenerateData() (*model.Data, error) {
 		}
 	}
 
-	// add tags, make sure they're sorted.
-	for _, tag := range tags {
-		output.Tags = append(output.Tags, *tag)
+	if !e.Config.SkipTags {
+		// add tags, make sure they're sorted.
+		for _, tag := range tags {
+			sort.Sort(model.Posts(tag.Posts))
+			output.Tags = append(output.Tags, *tag)
+		}
+		sort.Sort(model.Tags(output.Tags))
 	}
-	sort.Sort(model.TagPostsByTag(output.Tags))
 
 	return &output, nil
 }
@@ -167,19 +179,18 @@ func (e Engine) Render(data *model.Data) error {
 	if err != nil {
 		return err
 	}
-	for index, page := range pages {
+	for _, page := range pages {
 		logger.MaybeSyncInfof(e.Log, "rendering page `%s`", page.Name())
 		pageTemplate, err := e.CompileTemplate(filepath.Join(pagesPath, page.Name()), partials)
 		if err != nil {
 			return err
 		}
 		pageOutputPath := filepath.Join(outputPath, page.Name())
-		if err := e.WriteTemplate(pageTemplate, pageOutputPath, ViewModel{
-			Config:    e.Config,
-			PostIndex: index,
-			Post:      model.Posts(data.Posts).First(),
-			Posts:     data.Posts,
-			Tags:      data.Tags,
+		if err := e.WriteTemplate(pageTemplate, pageOutputPath, &model.ViewModel{
+			Config: e.Config,
+			Post:   model.Posts(data.Posts).First(),
+			Posts:  data.Posts,
+			Tags:   data.Tags,
 		}); err != nil {
 			return err
 		}
@@ -192,19 +203,18 @@ func (e Engine) Render(data *model.Data) error {
 	}
 
 	// foreach post, render the post with single to <slug>/index.html
-	for index, post := range data.Posts {
+	for _, post := range data.Posts {
 		slugPath := filepath.Join(outputPath, post.Slug)
 		logger.MaybeSyncInfof(e.Log, "rendering post `%s`", post.TitleOrDefault())
 
 		if err := MakeDir(slugPath); err != nil {
 			return exception.New(err)
 		}
-		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.FileIndex), ViewModel{
-			Config:    e.Config,
-			Posts:     data.Posts,
-			Tags:      data.Tags,
-			Post:      post,
-			PostIndex: index,
+		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
+			Config: e.Config,
+			Posts:  data.Posts,
+			Tags:   data.Tags,
+			Post:   post,
 		}); err != nil {
 			return err
 		}
@@ -213,25 +223,26 @@ func (e Engine) Render(data *model.Data) error {
 		}
 	}
 
-	tagTemplatePath := e.Config.TagTemplateOrDefault()
-	if len(tagTemplatePath) > 0 && fileutil.Exists(tagTemplatePath) {
-		tagTemplate, err := e.CompileTemplate(tagTemplatePath, partials)
-		if err != nil {
-			return err
-		}
-		for index, tag := range data.Tags {
-			tagPath := filepath.Join(outputPath, "tags", stringutil.Slugify(tag.Tag))
-			if err := MakeDir(tagPath); err != nil {
-				return exception.New(err)
-			}
-			if err := e.WriteTemplate(tagTemplate, filepath.Join(tagPath, constants.FileIndex), ViewModel{
-				Config:   e.Config,
-				Posts:    data.Posts,
-				Tags:     data.Tags,
-				Tag:      tag,
-				TagIndex: index,
-			}); err != nil {
+	if !e.Config.SkipTags {
+		tagTemplatePath := e.Config.TagTemplateOrDefault()
+		if len(tagTemplatePath) > 0 && fileutil.Exists(tagTemplatePath) {
+			tagTemplate, err := e.CompileTemplate(tagTemplatePath, partials)
+			if err != nil {
 				return err
+			}
+			for _, tag := range data.Tags {
+				tagPath := filepath.Join(outputPath, "tags", stringutil.Slugify(tag.Tag))
+				if err := MakeDir(tagPath); err != nil {
+					return exception.New(err)
+				}
+				if err := e.WriteTemplate(tagTemplate, filepath.Join(tagPath, constants.FileIndex), &model.ViewModel{
+					Config: e.Config,
+					Posts:  data.Posts,
+					Tags:   data.Tags,
+					Tag:    tag,
+				}); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -241,8 +252,10 @@ func (e Engine) Render(data *model.Data) error {
 		return err
 	}
 
-	if err := e.WriteDataJSON(data, filepath.Join(outputPath, constants.FileData)); err != nil {
-		return err
+	if !e.Config.SkipJSONData {
+		if err := e.WriteDataJSON(data, filepath.Join(outputPath, constants.FileData)); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -277,18 +290,11 @@ func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) erro
 	return nil
 }
 
-// ReadImage reads post metadata from a folder.
-func (e Engine) ReadImage(slugTemplate *template.Template, path string) (*model.Post, error) {
-	stat, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-	if !stat.IsDir() {
-		return nil, exception.New("not a directory").WithMessage(path)
-	}
-
-	// sniff image file
-	// and metadata
+// GeneratePost reads post contents and metadata from a folder.
+func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*model.Post, error) {
+	// sniff for image file
+	// sniff for template file
+	// sniff for metadata
 	files, err := ListDirectory(path)
 	if err != nil {
 		return nil, err
@@ -464,7 +470,7 @@ func (e Engine) CopyThumbnail(etag, destinationPath string, size int) error {
 }
 
 // WriteTemplate writes a template to a given path with a given data viewmodel.
-func (e Engine) WriteTemplate(tpl *template.Template, outputPath string, data interface{}) error {
+func (e Engine) WriteTemplate(tpl *template.Template, outputPath string, data *model.ViewModel) error {
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return exception.New(err)

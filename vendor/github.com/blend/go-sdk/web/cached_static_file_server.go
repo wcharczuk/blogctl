@@ -21,7 +21,7 @@ func NewCachedStaticFileServer(fs http.FileSystem) *CachedStaticFileServer {
 
 // CachedStaticFileServer  is a cache of static files.
 type CachedStaticFileServer struct {
-	log          *logger.Logger
+	log          logger.Log
 	fileSystem   http.FileSystem
 	syncRoot     sync.Mutex
 	rewriteRules []RewriteRule
@@ -31,12 +31,12 @@ type CachedStaticFileServer struct {
 }
 
 // Log returns a logger reference.
-func (csfs *CachedStaticFileServer) Log() *logger.Logger {
+func (csfs *CachedStaticFileServer) Log() logger.Log {
 	return csfs.log
 }
 
 // WithLogger sets the logger reference for the static file cache.
-func (csfs *CachedStaticFileServer) WithLogger(log *logger.Logger) *CachedStaticFileServer {
+func (csfs *CachedStaticFileServer) WithLogger(log logger.Log) *CachedStaticFileServer {
 	csfs.log = log
 	return csfs
 }

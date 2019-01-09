@@ -56,7 +56,7 @@ type Healthz struct {
 	hosted         HealthzHostable
 	cfg            *HealthzConfig
 	bindAddr       string
-	log            *logger.Logger
+	log            logger.Log
 	latch          *async.Latch
 	defaultHeaders map[string]string
 	recoverPanics  bool
@@ -148,13 +148,13 @@ func (hz *Healthz) RecoverPanics() bool {
 
 // WithLogger sets the app logger agent and returns a reference to the app.
 // It also sets underlying loggers in any child resources like providers and the auth manager.
-func (hz *Healthz) WithLogger(log *logger.Logger) *Healthz {
+func (hz *Healthz) WithLogger(log logger.Log) *Healthz {
 	hz.log = log
 	return hz
 }
 
 // Logger returns the diagnostics agent for the app.
-func (hz *Healthz) Logger() *logger.Logger {
+func (hz *Healthz) Logger() logger.Log {
 	return hz.log
 }
 

@@ -1,0 +1,11 @@
+{{ template "header" . }}
+<div class="tag">
+	{{ range $index, $post := .Tag.Posts }}
+	<div class="post">
+		<img src="{{$post.ImageSourceSmall}}" />
+	</div>
+	{{ else }}
+	<h2>No Posts For Tag.</h2>
+	{{ end }}
+</div>
+{{ template "footer" . }}

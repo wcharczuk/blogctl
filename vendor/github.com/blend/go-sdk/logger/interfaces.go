@@ -77,44 +77,49 @@ type SyncTriggerable interface {
 
 // OutputReceiver is an interface
 type OutputReceiver interface {
-	Infof(string, ...Any)
-	Sillyf(string, ...Any)
-	Debugf(string, ...Any)
+	Infof(string, ...interface{})
+	Sillyf(string, ...interface{})
+	Debugf(string, ...interface{})
 }
 
 // SyncOutputReceiver is an interface
 type SyncOutputReceiver interface {
-	SyncInfof(string, ...Any)
-	SyncSillyf(string, ...Any)
-	SyncDebugf(string, ...Any)
+	SyncInfof(string, ...interface{})
+	SyncSillyf(string, ...interface{})
+	SyncDebugf(string, ...interface{})
 }
 
 // ErrorOutputReceiver is an interface
 type ErrorOutputReceiver interface {
-	Warningf(string, ...Any)
-	Errorf(string, ...Any)
-	Fatalf(string, ...Any)
+	Warningf(string, ...interface{})
+	Errorf(string, ...interface{})
+	Fatalf(string, ...interface{})
 }
 
 // SyncErrorOutputReceiver is an interface
 type SyncErrorOutputReceiver interface {
-	SyncWarningf(string, ...Any)
-	SyncErrorf(string, ...Any)
-	SyncFatalf(string, ...Any)
+	SyncWarningf(string, ...interface{})
+	SyncErrorf(string, ...interface{})
+	SyncFatalf(string, ...interface{})
 }
 
 // ErrorReceiver is an interface
 type ErrorReceiver interface {
-	Warning(error)
-	Error(error)
-	Fatal(error)
+	Warning(error) error
+	Error(error) error
+	Fatal(error) error
 }
 
 // SyncErrorReceiver is an interface
 type SyncErrorReceiver interface {
-	SyncWarning(error)
-	SyncError(error)
-	SyncFatal(error)
+	SyncWarning(error) error
+	SyncError(error) error
+	SyncFatal(error) error
+}
+
+// SubContextable is a type that can spawn subcontexts.
+type SubContextable interface {
+	SubContext(string) *SubContext
 }
 
 // SyncLogger is a logger that implements syncronous methods.
@@ -147,9 +152,10 @@ type FullReceiver interface {
 	ErrorReceiver
 }
 
-// FullLogger is every possible interface.
+// FullLogger is every possible interface, including listenable.
 type FullLogger interface {
 	Listenable
+	SubContextable
 	SyncTriggerable
 	SyncOutputReceiver
 	SyncErrorOutputReceiver
@@ -159,6 +165,10 @@ type FullLogger interface {
 	ErrorOutputReceiver
 	ErrorReceiver
 }
+
+// Log is an alias to full logger.
+// It is speculative as useful.
+type Log = FullLogger
 
 // Writer is a type that can consume events.
 type Writer interface {

@@ -15,8 +15,8 @@ func NewEventMeta(flag Flag) *EventMeta {
 	return &EventMeta{
 		flag:        flag,
 		ts:          time.Now().UTC(),
-		labels:      make(Labels),
-		annotations: make(Annotations),
+		labels:      make(map[string]string),
+		annotations: make(map[string]string),
 	}
 }
 
@@ -27,8 +27,8 @@ type EventMeta struct {
 	ts            time.Time
 	headings      []string
 	entity        string
-	labels        Labels
-	annotations   Annotations
+	labels        map[string]string
+	annotations   map[string]string
 }
 
 // Headings returns the event meta headings.
@@ -59,19 +59,19 @@ func (em *EventMeta) SetTimestamp(ts time.Time) { em.ts = ts }
 func (em *EventMeta) AddLabelValue(key, value string) { em.labels[key] = value }
 
 // SetLabels sets the labels collection.
-func (em *EventMeta) SetLabels(labels Labels) { em.labels = labels }
+func (em *EventMeta) SetLabels(labels map[string]string) { em.labels = labels }
 
 // Labels returns the event labels.
-func (em *EventMeta) Labels() Labels { return em.labels }
+func (em *EventMeta) Labels() map[string]string { return em.labels }
 
 // AddAnnotationValue adds an annotation value
 func (em *EventMeta) AddAnnotationValue(key, value string) { em.annotations[key] = value }
 
 // SetAnnotations sets the annotations collection.
-func (em *EventMeta) SetAnnotations(annotations Annotations) { em.annotations = annotations }
+func (em *EventMeta) SetAnnotations(annotations map[string]string) { em.annotations = annotations }
 
 // Annotations returns the event annotations.
-func (em *EventMeta) Annotations() Annotations { return em.annotations }
+func (em *EventMeta) Annotations() map[string]string { return em.annotations }
 
 // SetEntity sets the entity value.
 func (em *EventMeta) SetEntity(value string) { em.entity = value }

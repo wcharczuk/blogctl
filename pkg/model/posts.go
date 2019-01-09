@@ -11,3 +11,18 @@ func (p Posts) First() (output Post) {
 	}
 	return
 }
+
+// Len implements sorter.
+func (p Posts) Len() int {
+	return len(p)
+}
+
+// Swap implements sorter.
+func (p Posts) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+// Less implements sorter.
+func (p Posts) Less(i, j int) bool {
+	return p[i].Meta.Posted.After(p[j].Meta.Posted)
+}

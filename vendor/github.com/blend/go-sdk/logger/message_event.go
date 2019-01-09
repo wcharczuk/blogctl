@@ -15,7 +15,7 @@ var (
 )
 
 // Messagef returns a new Message Event.
-func Messagef(flag Flag, format string, args ...Any) *MessageEvent {
+func Messagef(flag Flag, format string, args ...interface{}) *MessageEvent {
 	return &MessageEvent{
 		EventMeta: NewEventMeta(flag),
 		message:   fmt.Sprintf(format, args...),

@@ -68,7 +68,7 @@ type App struct {
 	cfg   *Config
 	hsts  *HSTSConfig
 
-	log   *logger.Logger
+	log   logger.Log
 	auth  *AuthManager
 	views *ViewCache
 
@@ -387,13 +387,13 @@ func (a *App) BindAddr() string {
 
 // WithLogger sets the app logger agent and returns a reference to the app.
 // It also sets underlying loggers in any child resources like providers and the auth manager.
-func (a *App) WithLogger(log *logger.Logger) *App {
+func (a *App) WithLogger(log logger.Log) *App {
 	a.log = log
 	return a
 }
 
 // Logger returns the diagnostics agent for the app.
-func (a *App) Logger() *logger.Logger {
+func (a *App) Logger() logger.Log {
 	return a.log
 }
 
@@ -505,12 +505,6 @@ func (a *App) Start() (err error) {
 	}
 
 	a.syncInfof("%s server started, listening on %s", serverProtocol, a.bindAddr)
-	if a.log != nil {
-		if a.log.Flags() != nil {
-			a.syncInfof("%s server logging flags %s", serverProtocol, a.log.Flags().String())
-		}
-	}
-
 	if a.server.TLSConfig != nil && a.server.TLSConfig.ClientCAs != nil {
 		a.syncInfof("%s using client cert pool with (%d) client certs", serverProtocol, len(a.server.TLSConfig.ClientCAs.Subjects()))
 	}
@@ -1094,7 +1088,7 @@ func (a *App) logFatal(err error, req *http.Request) {
 		return
 	}
 	if err != nil {
-		a.log.FatalWithReq(err, req)
+		a.log.Trigger(logger.NewErrorEventWithState(logger.Fatal, err, req))
 	}
 }
 

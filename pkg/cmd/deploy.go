@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"os"
 
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
@@ -9,6 +10,7 @@ import (
 	"github.com/wcharczuk/blogctl/pkg/aws"
 	"github.com/wcharczuk/blogctl/pkg/aws/cloudfront"
 	"github.com/wcharczuk/blogctl/pkg/aws/s3"
+	"github.com/wcharczuk/blogctl/pkg/engine"
 )
 
 // Deploy returns the deploy command.
@@ -16,51 +18,57 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 	var bucket, region *string
 	var dryRun *bool
 	cmd := &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploy the photoblog",
+		Use:     "deploy",
+		Aliases: []string{"d", "deploy"},
+		Short:   "Deploy the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, err := ReadConfig(*configPath)
+			deployLog := log.SubContext("deploy")
+			cfg, err := engine.ReadConfig(*configPath)
 			if err != nil {
-				log.SyncFatalExit(err)
+				deployLog.SyncFatal(err)
+				os.Exit(1)
 			}
 
 			if *bucket == "" {
 				*bucket = cfg.S3.Bucket
 			}
 			if *bucket == "" {
-				log.SyncFatalf("s3 bucket not set in config or in flags, cannot continue (set at `s3 > bucket` in the config or use --bucket)")
+				deployLog.SyncFatalf("s3 bucket not set in config or in flags, cannot continue (set at `s3 > bucket` in the config or use --bucket)")
+				os.Exit(1)
 			}
 
 			if *region == "" {
 				*region = cfg.S3.Region
 			}
 			if *region == "" {
-				log.SyncFatalf("s3 region not set in config or in flags, cannot continue (set at `s3 > region` in the config or use --region)")
+				deployLog.SyncFatalf("s3 region not set in config or in flags, cannot continue (set at `s3 > region` in the config or use --region)")
+				os.Exit(1)
 			}
 
 			mgr := s3.New(&aws.Config{
 				Region: *region,
 			})
 			mgr.DryRun = *dryRun
-			mgr.Log = log
+			mgr.Log = deployLog
 			mgr.PutObjectDefaults = s3.File{
 				ACL: s3.ACLPublicRead,
 			}
 			paths, err := mgr.SyncDirectory(context.Background(), cfg.OutputPathOrDefault(), *bucket)
 
 			if err != nil {
-				log.SyncFatal(err)
+				deployLog.SyncFatal(err)
 			}
 
 			if !mgr.DryRun {
 				if !cfg.Cloudfront.IsZero() && len(paths) > 0 {
-					log.SyncInfof("cloudfront invalidating %d paths", len(paths))
+					deployLog.SyncInfof("cloudfront invalidating %d paths", len(paths))
 					if err := cloudfront.InvalidateMany(context.Background(), mgr.Session, cfg.Cloudfront.Distribution, paths...); err != nil {
-						log.SyncFatalExit(err)
+						deployLog.SyncFatal(err)
+						os.Exit(1)
 					}
 				}
 			} else {
-				log.SyncDebugf("dry run; would invalidate %d files", len(paths))
+				deployLog.SyncDebugf("dry run; would invalidate %d files", len(paths))
 			}
 		},
 	}

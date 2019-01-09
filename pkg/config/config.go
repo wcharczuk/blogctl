@@ -8,6 +8,9 @@ var (
 	GitRef  = ""
 )
 
+// Extra is just exta data you might want to pass into the renderer.
+type Extra = map[string]interface{}
+
 // Config is the blog config
 type Config struct {
 	// Title is the title for the blog.
@@ -37,10 +40,10 @@ type Config struct {
 	SlugTemplate string `json:"slugTemplate,omitempty" yaml:"slugTemplate,omitempty"`
 	// PostTemplate is the path to the post template file.
 	// It is what is rendered when you go to /<POST_SLUG>/
-	PostTemplate string `json:"postTemplate,omitempty" yaml:"postTemplate,omitempty"`
+	PostTemplatePath string `json:"postTemplatePath,omitempty" yaml:"postTemplatePath,omitempty"`
 	// TagTemplate is the path to the tag template file.
 	// It is what is rendered when you go to /tags/:tag_name
-	TagTemplate string `json:"tagTemplate,omitempty" yaml:"tagTemplate,omitempty"`
+	TagTemplatePath string `json:"tagTemplatePath,omitempty" yaml:"tagTemplatePath,omitempty"`
 	// ImageSizes lets you set what size thumbnails to create from post files.
 	// This defaults to 2048px, 1024px, and 512px.
 	ImageSizes []int `json:"imageSizes,omitempty" yaml:"imageSizes,omitempty"`
@@ -50,6 +53,13 @@ type Config struct {
 	S3 S3 `json:"s3,omitempty" yaml:"s3,omitempty"`
 	// Cloudfront governs options for how the s3 files are cached.
 	Cloudfront Cloudfront `json:"cloudfront,omitempty" yaml:"cloudfront,omitempty"`
+
+	// below are knobs you can turn to disable specific things.
+
+	// SkipTags instructs the engine to not create tag summary pages.
+	SkipTags bool `json:"skipTags,omitempty" yaml:"skipTags,omitempty"`
+	// SkipJSONData instructs the engine not to create a data.json file.
+	SkipJSONData bool `json:"skipJSONData,omitempty" yaml:"skipJSONData,omitempty"`
 }
 
 // Fields returns fields to prompt for when creating a new config.
@@ -60,10 +70,13 @@ func (c *Config) Fields() []Field {
 		{Prompt: "Base URL (fully qualified, i.e https://foo.com)", FieldReference: &c.BaseURL},
 		{Prompt: "Output Path (where the compiled blog goes)", FieldReference: &c.OutputPath, Default: constants.DefaultOutputPath},
 		{Prompt: "Posts Path (where your posts live)", FieldReference: &c.PostsPath, Default: constants.DefaultPostsPath},
-		{Prompt: "Partials Path (templates to include)", FieldReference: &c.PartialsPath, Default: constants.DefaultPartialsPath},
-		{Prompt: "Statics Path (files to copy as is to output)", FieldReference: &c.StaticsPath, Default: constants.DefaultStaticsPath},
-		{Prompt: "Post Template Path (template to use for each post)", FieldReference: &c.PostTemplate, Default: constants.DefaultPostTemplate},
-		{Prompt: "Tag Template Path (template to use for each tag)", FieldReference: &c.TagTemplate, Default: constants.DefaultTagTemplate},
+		{Prompt: "Pages Path (pages to render)", FieldReference: &c.PagesPath, Default: constants.DefaultPagesPath},
+		{Prompt: "Partials Path (partials to include)", FieldReference: &c.PartialsPath, Default: constants.DefaultPartialsPath},
+		{Prompt: "Statics Path (files to copy to output)", FieldReference: &c.StaticsPath, Default: constants.DefaultStaticsPath},
+		{Prompt: "Slug Template (template literal for slugs)", FieldReference: &c.SlugTemplate, Default: constants.DefaultSlugTemplate},
+		{Prompt: "Post Template Path (template file to use for each post)", FieldReference: &c.PostTemplatePath, Default: constants.DefaultPostTemplatePath},
+		{Prompt: "Tag Template Path (template file to use for each tag)", FieldReference: &c.TagTemplatePath, Default: constants.DefaultTagTemplatePath},
+		{Prompt: "Thumbnail Cache Path (resized image cache path)", FieldReference: &c.ThumbnailCachePath, Default: constants.DefaultThumbnailCachePath},
 	}
 }
 
@@ -108,18 +121,18 @@ func (c Config) SlugTemplateOrDefault() string {
 
 // PostTemplateOrDefault returns the single post template or a default.
 func (c Config) PostTemplateOrDefault() string {
-	if c.PostTemplate != "" {
-		return c.PostTemplate
+	if c.PostTemplatePath != "" {
+		return c.PostTemplatePath
 	}
-	return constants.DefaultPostTemplate
+	return constants.DefaultPostTemplatePath
 }
 
 // TagTemplateOrDefault returns the single tag template or a default.
 func (c Config) TagTemplateOrDefault() string {
-	if c.TagTemplate != "" {
-		return c.TagTemplate
+	if c.TagTemplatePath != "" {
+		return c.TagTemplatePath
 	}
-	return constants.DefaultTagTemplate
+	return constants.DefaultTagTemplatePath
 }
 
 // PagesPathOrDefault returns page file paths or defaults.
@@ -160,14 +173,4 @@ func (c Config) ImageSizesOrDefault() []int {
 		return c.ImageSizes
 	}
 	return constants.DefaultImageSizes
-}
-
-// Extra is just exta data you might want to pass into the renderer.
-type Extra map[string]interface{}
-
-// Field is a field to prompt for on the config.
-type Field struct {
-	Prompt         string
-	FieldReference *string
-	Default        string
 }

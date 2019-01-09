@@ -8,6 +8,7 @@ import (
 // Fork runs a command with a given list of arguments.
 // It resolves the command name in your $PATH list for you.
 // It shows output and allows input.
+// It is intended to be used in scripting.
 func Fork(command string, args ...string) error {
 	absoluteCommand, err := exec.LookPath(command)
 	if err != nil {

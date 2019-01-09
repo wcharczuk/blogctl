@@ -14,8 +14,8 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 	assert := assert.New(t)
 
 	defaults := config.Config{}
-	engine := &Engine{Config: defaults}
-	slugTemplate, err := engine.ParseSlugTemplate()
+	e := &Engine{Config: defaults}
+	slugTemplate, err := e.ParseSlugTemplate()
 	assert.Nil(err)
 
 	post := model.Post{
@@ -24,5 +24,13 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 			Posted: time.Date(2018, 12, 11, 10, 9, 8, 7, time.UTC),
 		},
 	}
-	assert.Equal("2018/12/11/test-slug", engine.CreateSlug(slugTemplate, post))
+	assert.Equal("2018/12/11/test-slug", e.CreateSlug(slugTemplate, post))
+}
+
+func TestEngineBuild(t *testing.T) {
+	assert := assert.New(t)
+
+	config, err := ReadConfig("./testdata/config.yml")
+	assert.Nil(err)
+	assert.Nil(New(config).Generate())
 }

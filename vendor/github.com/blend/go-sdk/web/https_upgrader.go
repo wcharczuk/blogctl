@@ -29,7 +29,7 @@ func NewHTTPSUpgraderFromConfig(cfg *HTTPSUpgraderConfig) *HTTPSUpgrader {
 // HTTPSUpgrader redirects HTTP to HTTPS
 type HTTPSUpgrader struct {
 	targetPort int32
-	log        *logger.Logger
+	log        logger.Log
 }
 
 // WithTargetPort sets the target port.
@@ -44,13 +44,13 @@ func (hu *HTTPSUpgrader) TargetPort() int32 {
 }
 
 // WithLogger sets the logger.
-func (hu *HTTPSUpgrader) WithLogger(log *logger.Logger) *HTTPSUpgrader {
+func (hu *HTTPSUpgrader) WithLogger(log logger.Log) *HTTPSUpgrader {
 	hu.log = log
 	return hu
 }
 
 // Logger returns the logger.
-func (hu *HTTPSUpgrader) Logger() *logger.Logger {
+func (hu *HTTPSUpgrader) Logger() logger.Log {
 	return hu.log
 }
 

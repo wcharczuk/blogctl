@@ -6,13 +6,30 @@ import (
 	"strings"
 )
 
-// MustCmds returns a command for a full comamnd statement.
+// MustCmds returns a list of commands for a given set of statements.
+// It is useful for running a batch of commands.
+// It panics on error.
 func MustCmds(statements ...string) []*exec.Cmd {
 	var output []*exec.Cmd
 	for _, statement := range statements {
 		output = append(output, MustCmdParsed(statement))
 	}
 	return output
+}
+
+// Cmds returns a list of commands for a given set of statements.
+// It is useful for running a batch of commands.
+// It will return the first error it encounters.
+func Cmds(statements ...string) ([]*exec.Cmd, error) {
+	var output []*exec.Cmd
+	for _, statement := range statements {
+		cmd, err := CmdParsed(statement)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, cmd)
+	}
+	return output, nil
 }
 
 // MustCmdParsed returns a command for a full comamnd statement.

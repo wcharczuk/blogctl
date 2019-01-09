@@ -1,0 +1,11 @@
+title: testdata
+author: blogctl
+baseURL: https://github.com/wcharczuk/blogctl
+postsPath: ./testdata/posts
+outputPath: ./testdata/dist
+pagesPath: ./testdata/layout/pages
+partialsPath: ./testdata/layout/partials
+staticsPath: ./testdata/static
+postTemplatePath: ./testdata/layout/post.html
+tagTemplatePath: ./testdata/layout/tag.html
+thumbnailCachePath: ./testdata/thumbnails

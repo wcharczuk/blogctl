@@ -1,0 +1,9 @@
+{{ template "header" . }}
+{{ range $index, $post := .Posts }}
+	<div class="post">
+		<img src="{{ $post.ImageSourceSmall }}" />
+	</div>
+{{ else }}
+	<h2>No Posts.</h2>
+{{ end }}
+{{ template "footer" . }}

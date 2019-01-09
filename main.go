@@ -28,15 +28,17 @@ func main() {
 	blogctl := &cobra.Command{
 		Use: "blogctl",
 	}
-	configPath := blogctl.PersistentFlags().String("config", "config.yml", "The config file path")
+	configPath := blogctl.PersistentFlags().String("config", "./config.yml", "The config file path")
 
 	log := logger.All().WithHeading("blogctl")
 
+	// add commands
 	blogctl.AddCommand(cmd.Init(configPath, log))
 	blogctl.AddCommand(cmd.New(configPath, log))
 	blogctl.AddCommand(cmd.Build(configPath, log))
 	blogctl.AddCommand(cmd.Deploy(configPath, log))
 	blogctl.AddCommand(cmd.Server(configPath, log))
+
 	if err := blogctl.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 	}

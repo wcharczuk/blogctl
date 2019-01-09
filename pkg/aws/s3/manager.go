@@ -29,7 +29,7 @@ func New(cfg *aws.Config) *Manager {
 
 // Manager is a helper for uploading files to s3.
 type Manager struct {
-	Log               *logger.Logger
+	Log               logger.FullReceiver
 	Config            *aws.Config
 	Session           *session.Session
 	PutObjectDefaults File
