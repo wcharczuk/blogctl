@@ -57,12 +57,17 @@ func (e Engine) Generate() error {
 		return err
 	}
 
-	data, err := e.DiscoverPosts()
+	partials, err := e.DiscoverPartials()
 	if err != nil {
 		return err
 	}
 
-	if err := e.Render(data); err != nil {
+	data, err := e.DiscoverPosts(partials...)
+	if err != nil {
+		return err
+	}
+
+	if err := e.Render(data, partials...); err != nil {
 		return err
 	}
 
@@ -88,7 +93,7 @@ func (e Engine) InitializeThumbnailCache() error {
 }
 
 // DiscoverPosts generates the blog data.
-func (e Engine) DiscoverPosts() (*model.Data, error) {
+func (e Engine) DiscoverPosts(partials ...string) (*model.Data, error) {
 	slugTemplate, err := e.ParseSlugTemplate()
 	if err != nil {
 		return nil, err
@@ -114,7 +119,7 @@ func (e Engine) DiscoverPosts() (*model.Data, error) {
 			logger.MaybeSyncInfof(e.Log, "reading post `%s`", currentPath)
 
 			// check if we have an image
-			post, err := e.GeneratePost(slugTemplate, currentPath)
+			post, err := e.GeneratePost(slugTemplate, currentPath, partials...)
 			if err != nil {
 				return err
 			}
@@ -166,13 +171,8 @@ func (e Engine) DiscoverPosts() (*model.Data, error) {
 }
 
 // Render writes the templates out for each of the posts.
-func (e Engine) Render(data *model.Data) error {
+func (e Engine) Render(data *model.Data, partials ...string) error {
 	outputPath := e.Config.OutputPathOrDefault()
-
-	partials, err := e.ReadPartials()
-	if err != nil {
-		return err
-	}
 
 	pagesPath := e.Config.PagesPathOrDefault()
 	pages, err := ListDirectory(pagesPath)
@@ -196,10 +196,22 @@ func (e Engine) Render(data *model.Data) error {
 		}
 	}
 
-	postTemplatePath := e.Config.PostTemplateOrDefault()
-	defaultPostTemplate, err := e.CompileTemplate(postTemplatePath, partials)
-	if err != nil {
-		return err
+	imagePostTemplatePath := e.Config.ImagePostTemplateOrDefault()
+	var imagePostTemplate *template.Template
+	if imagePostTemplatePath != "" {
+		imagePostTemplate, err = e.CompileTemplate(imagePostTemplatePath, partials)
+		if err != nil {
+			return err
+		}
+	}
+
+	textPostTemplatePath := e.Config.TextPostTemplateOrDefault()
+	var textPostTemplate *template.Template
+	if textPostTemplatePath != "" {
+		textPostTemplate, err = e.CompileTemplate(textPostTemplatePath, partials)
+		if err != nil {
+			return err
+		}
 	}
 
 	// foreach post, render the post with single to <slug>/index.html
@@ -211,12 +223,9 @@ func (e Engine) Render(data *model.Data) error {
 			return exception.New(err)
 		}
 
-		postTemplate := defaultPostTemplate
-		if post.TemplatePath != "" {
-			postTemplate, err = e.CompileTemplate(post.TemplatePath, partials)
-			if err != nil {
-				return err
-			}
+		postTemplate := imagePostTemplate
+		if post.Image.IsZero() {
+			postTemplate = textPostTemplate
 		}
 
 		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
@@ -277,33 +286,28 @@ func (e Engine) Render(data *model.Data) error {
 // utilities
 //
 
-// ProcessThumbnails processes thumbnails.
-func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) error {
-	originalContents, err := ioutil.ReadFile(originalFilePath)
+// DiscoverPartials reads all the partials named in the config.
+func (e Engine) DiscoverPartials() ([]string, error) {
+	partialsPath := e.Config.PartialsPathOrDefault()
+
+	partialFiles, err := ListDirectory(partialsPath)
 	if err != nil {
-		return exception.New(err)
+		return nil, err
 	}
 
-	etag, err := fileutil.ETag(originalContents)
-	if err != nil {
-		return err
-	}
-
-	if e.ShouldGenerateThumbnails(etag) {
-		if err := e.GenerateThumbnails(originalContents, etag); err != nil {
-			return nil
+	var partials []string
+	for _, partial := range partialFiles {
+		contents, err := ioutil.ReadFile(filepath.Join(partialsPath, partial.Name()))
+		if err != nil {
+			return nil, exception.New(err).WithMessagef("partial: %s", partial)
 		}
+		partials = append(partials, string(contents))
 	}
-
-	if err := e.CopyThumbnails(etag, destinationPath); err != nil {
-		return err
-	}
-
-	return nil
+	return partials, nil
 }
 
 // GeneratePost reads post contents and metadata from a folder.
-func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*model.Post, error) {
+func (e Engine) GeneratePost(slugTemplate *template.Template, path string, partials ...string) (*model.Post, error) {
 	// sniff for image file
 	// sniff for template file
 	// sniff for metadata
@@ -337,6 +341,9 @@ func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*mod
 			if modTime.Before(fi.ModTime()) {
 				modTime = fi.ModTime()
 			}
+			if post.Template, err = e.CompileTemplate(post.TemplatePath, partials); err != nil {
+				return nil, err
+			}
 		}
 	}
 	post.Slug = e.CreateSlug(slugTemplate, post)
@@ -349,24 +356,29 @@ func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*mod
 	return &post, nil
 }
 
-// ReadPartials reads all the partials named in the config.
-func (e Engine) ReadPartials() ([]string, error) {
-	partialsPath := e.Config.PartialsPathOrDefault()
-
-	partialFiles, err := ListDirectory(partialsPath)
+// ProcessThumbnails processes thumbnails.
+func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) error {
+	originalContents, err := ioutil.ReadFile(originalFilePath)
 	if err != nil {
-		return nil, err
+		return exception.New(err)
 	}
 
-	var partials []string
-	for _, partial := range partialFiles {
-		contents, err := ioutil.ReadFile(filepath.Join(partialsPath, partial.Name()))
-		if err != nil {
-			return nil, exception.New(err).WithMessagef("partial: %s", partial)
-		}
-		partials = append(partials, string(contents))
+	etag, err := fileutil.ETag(originalContents)
+	if err != nil {
+		return err
 	}
-	return partials, nil
+
+	if e.ShouldGenerateThumbnails(etag) {
+		if err := e.GenerateThumbnails(originalContents, etag); err != nil {
+			return nil
+		}
+	}
+
+	if err := e.CopyThumbnails(etag, destinationPath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CompileTemplate compiles a template.

@@ -17,8 +17,10 @@ const (
 	DefaultPagesPath = "./layout/pages"
 	// DefaultPartialsPath is the default partials path.
 	DefaultPartialsPath = "./layout/partials"
-	// DefaultPostTemplatePath is the default post template path.
-	DefaultPostTemplatePath = "./layout/post.html"
+	// DefaultImagePostTemplatePath is the default image post template path.
+	DefaultImagePostTemplatePath = "./layout/image.html"
+	// DefaultTextPostTemplatePath is the default text post template path.
+	DefaultTextPostTemplatePath = "./layout/text.html"
 	// DefaultTagTemplatePath is the default tag template path.
 	DefaultTagTemplatePath = "./layout/tag.html"
 )

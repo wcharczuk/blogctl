@@ -15,6 +15,7 @@ func ViewFuncs() template.FuncMap {
 	base := sdkTemplate.Funcs.FuncMap()
 	base["partition"] = partition
 	base["set_title"] = setTitle
+	base["render"] = render
 	return base
 }
 
@@ -65,4 +66,16 @@ func setTitle(vm *model.ViewModel, title string) error {
 	}
 	vm.Title = title
 	return nil
+}
+
+func render(post model.Post) (template.HTML, error) {
+	if post.Template == nil {
+		return "", fmt.Errorf("post template unset")
+	}
+	buffer := new(bytes.Buffer)
+	err := post.Template.Execute(buffer, post)
+	if err != nil {
+		return "", err
+	}
+	return template.HTML(buffer.String()), nil
 }

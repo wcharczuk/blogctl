@@ -79,7 +79,10 @@ func Init(configPath *string, log *logger.Logger) *cobra.Command {
 			if err := engine.WriteFile(filepath.Join(name, config.PagesPathOrDefault(), constants.FileIndex), []byte(indexHTML)); err != nil {
 				sh.Fatal(err)
 			}
-			if err := engine.WriteFile(filepath.Join(name, config.PostTemplateOrDefault()), []byte(postHTML)); err != nil {
+			if err := engine.WriteFile(filepath.Join(name, config.ImagePostTemplateOrDefault()), []byte(imageHTML)); err != nil {
+				sh.Fatal(err)
+			}
+			if err := engine.WriteFile(filepath.Join(name, config.TextPostTemplateOrDefault()), []byte(textHTML)); err != nil {
 				sh.Fatal(err)
 			}
 			if err := engine.WriteFile(filepath.Join(name, config.TagTemplateOrDefault()), []byte(tagHTML)); err != nil {
@@ -124,9 +127,15 @@ const (
 {{ end }}
 {{ template "footer" . }}`
 
-	postHTML = `{{ template "header" . }}
-<div class="post">
+	imageHTML = `{{ template "header" . }}
+<div class="image post">
 	<img src="{{ .Post.ImageSourceLarge}}" />
+</div>
+{{ template "footer" . }}`
+
+	textHTML = `{{ template "header" . }}
+<div class="text post">
+	{{ render .Post }}
 </div>
 {{ template "footer" . }}`
 

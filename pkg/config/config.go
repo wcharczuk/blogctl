@@ -38,9 +38,12 @@ type Config struct {
 	// SlugTemplate is the template for post slugs.
 	// It defaults to "/{{ .Meta.Posted.Year }}/{{ .Meta.Posted.Month }}/{{ .Meta.Posted.Day }}/{{ .Meta.Title | slugify }}/"
 	SlugTemplate string `json:"slugTemplate,omitempty" yaml:"slugTemplate,omitempty"`
-	// PostTemplate is the path to the post template file.
-	// It is what is rendered when you go to /<POST_SLUG>/
-	PostTemplatePath string `json:"postTemplatePath,omitempty" yaml:"postTemplatePath,omitempty"`
+	// ImagePostTemplate is the path to the post template file.
+	// It is what is rendered when you go to /<POST_SLUG>/ for image posts.
+	ImagePostTemplatePath string `json:"imagePostTemplatePath,omitempty" yaml:"imagePostTemplatePath,omitempty"`
+	// TextPostTemplatePath is the path to the text post template file.
+	// It is what is rendered when you go to /<POST_SLUG>/ for text posts.
+	TextPostTemplatePath string `json:"textPostTemplatePath,omitempty" yaml:"textPostTemplatePath,omitempty"`
 	// TagTemplate is the path to the tag template file.
 	// It is what is rendered when you go to /tags/:tag_name
 	TagTemplatePath string `json:"tagTemplatePath,omitempty" yaml:"tagTemplatePath,omitempty"`
@@ -74,7 +77,8 @@ func (c *Config) Fields() []Field {
 		{Prompt: "Partials Path (partials to include)", FieldReference: &c.PartialsPath, Default: constants.DefaultPartialsPath},
 		{Prompt: "Statics Path (files to copy to output)", FieldReference: &c.StaticsPath, Default: constants.DefaultStaticsPath},
 		{Prompt: "Slug Template (template literal for slugs)", FieldReference: &c.SlugTemplate, Default: constants.DefaultSlugTemplate},
-		{Prompt: "Post Template Path (template file to use for each post)", FieldReference: &c.PostTemplatePath, Default: constants.DefaultPostTemplatePath},
+		{Prompt: "Image Post Template Path (template file to use for image posts)", FieldReference: &c.ImagePostTemplatePath, Default: constants.DefaultImagePostTemplatePath},
+		{Prompt: "Text Post Template Path (template file to use for text posts)", FieldReference: &c.TextPostTemplatePath, Default: constants.DefaultTextPostTemplatePath},
 		{Prompt: "Tag Template Path (template file to use for each tag)", FieldReference: &c.TagTemplatePath, Default: constants.DefaultTagTemplatePath},
 		{Prompt: "Thumbnail Cache Path (resized image cache path)", FieldReference: &c.ThumbnailCachePath, Default: constants.DefaultThumbnailCachePath},
 	}
@@ -119,12 +123,20 @@ func (c Config) SlugTemplateOrDefault() string {
 	return constants.DefaultSlugTemplate
 }
 
-// PostTemplateOrDefault returns the single post template or a default.
-func (c Config) PostTemplateOrDefault() string {
-	if c.PostTemplatePath != "" {
-		return c.PostTemplatePath
+// ImagePostTemplateOrDefault returns the single post template or a default.
+func (c Config) ImagePostTemplateOrDefault() string {
+	if c.ImagePostTemplatePath != "" {
+		return c.ImagePostTemplatePath
 	}
-	return constants.DefaultPostTemplatePath
+	return constants.DefaultImagePostTemplatePath
+}
+
+// TextPostTemplateOrDefault returns the single text post template or a default.
+func (c Config) TextPostTemplateOrDefault() string {
+	if c.TextPostTemplatePath != "" {
+		return c.TextPostTemplatePath
+	}
+	return constants.DefaultTextPostTemplatePath
 }
 
 // TagTemplateOrDefault returns the single tag template or a default.

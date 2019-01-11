@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"html/template"
 	"path/filepath"
 
 	"github.com/wcharczuk/blogctl/pkg/constants"
@@ -12,6 +13,7 @@ type Post struct {
 	OutputPath   string `json:"outputPath" yaml:"outputPath"`
 	Slug         string `json:"slug" yaml:"slug"`
 	TemplatePath string `json:"templatePath" yaml:"templatePath"`
+	Template     *template.Template
 	ImagePath    string `json:"originalPath" yaml:"originalPath"`
 	Image        Image  `json:"image" yaml:"image"`
 	Meta         Meta   `json:"meta" yaml:"meta"`
