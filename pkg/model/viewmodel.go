@@ -16,11 +16,6 @@ type ViewModel struct {
 	Tag  Tag
 }
 
-// SetTitle sets the viewmodel title.
-func (vm *ViewModel) SetTitle(title string) {
-	vm.Title = title
-}
-
 // TitleOrDefault returns the title.
 func (vm ViewModel) TitleOrDefault() string {
 	if vm.Title != "" {

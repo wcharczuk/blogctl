@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 
 	"github.com/blend/go-sdk/exception"
@@ -13,6 +14,7 @@ import (
 func ViewFuncs() template.FuncMap {
 	base := sdkTemplate.Funcs.FuncMap()
 	base["partition"] = partition
+	base["set_title"] = setTitle
 	return base
 }
 
@@ -55,4 +57,12 @@ func partition(index, partitions int, posts []model.Post) ([]model.Post, error) 
 		output = append(output, posts[index])
 	}
 	return output, nil
+}
+
+func setTitle(vm *model.ViewModel, title string) error {
+	if vm == nil {
+		return fmt.Errorf("viewmodel unset")
+	}
+	vm.Title = title
+	return nil
 }
