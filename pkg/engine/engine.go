@@ -197,7 +197,7 @@ func (e Engine) Render(data *model.Data) error {
 	}
 
 	postTemplatePath := e.Config.PostTemplateOrDefault()
-	postTemplate, err := e.CompileTemplate(postTemplatePath, partials)
+	defaultPostTemplate, err := e.CompileTemplate(postTemplatePath, partials)
 	if err != nil {
 		return err
 	}
@@ -210,6 +210,15 @@ func (e Engine) Render(data *model.Data) error {
 		if err := MakeDir(slugPath); err != nil {
 			return exception.New(err)
 		}
+
+		postTemplate := defaultPostTemplate
+		if post.TemplatePath != "" {
+			postTemplate, err = e.CompileTemplate(post.TemplatePath, partials)
+			if err != nil {
+				return err
+			}
+		}
+
 		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
 			Config: e.Config,
 			Posts:  data.Posts,
@@ -218,8 +227,11 @@ func (e Engine) Render(data *model.Data) error {
 		}); err != nil {
 			return err
 		}
-		if err := e.ProcessThumbnails(post.OriginalPath, slugPath); err != nil {
-			return err
+
+		if post.ImagePath != "" {
+			if err := e.ProcessThumbnails(post.ImagePath, slugPath); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -313,10 +325,17 @@ func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*mod
 				return nil, err
 			}
 		} else if HasExtension(name, constants.ImageExtensions...) && post.Image.IsZero() {
-			post.OriginalPath = filepath.Join(path, name)
-			modTime = fi.ModTime()
-			if post.Image, err = ReadImage(post.OriginalPath); err != nil {
+			post.ImagePath = filepath.Join(path, name)
+			if modTime.Before(fi.ModTime()) {
+				modTime = fi.ModTime()
+			}
+			if post.Image, err = ReadImage(post.ImagePath); err != nil {
 				return nil, err
+			}
+		} else if HasExtension(name, constants.TemplateExtensions...) && post.TemplatePath == "" {
+			post.TemplatePath = filepath.Join(path, name)
+			if modTime.Before(fi.ModTime()) {
+				modTime = fi.ModTime()
 			}
 		}
 	}
@@ -324,8 +343,8 @@ func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*mod
 	if post.Meta.Posted.IsZero() {
 		post.Meta.Posted = modTime
 	}
-	if post.OriginalPath == "" {
-		return nil, exception.New("no image found").WithMessage(path)
+	if post.ImagePath == "" && post.TemplatePath == "" {
+		return nil, exception.New("no image or template found").WithMessage(path)
 	}
 	return &post, nil
 }

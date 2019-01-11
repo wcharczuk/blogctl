@@ -655,21 +655,30 @@ func (a *App) SetStaticMiddleware(route string, middlewares ...Middleware) error
 	return exception.New("no static fileserver mounted at route").WithMessagef("route: %s", mountedRoute)
 }
 
-// ServeStatic serves files from the given file system root.
+// ServeStatic serves files from the given file system root(s)..
 // If the path does not end with "/*filepath" that suffix will be added for you internally.
 // For example if root is "/etc" and *filepath is "passwd", the local file
 // "/etc/passwd" would be served.
-func (a *App) ServeStatic(route, filepath string) {
-	sfs := NewStaticFileServer(http.Dir(filepath))
+func (a *App) ServeStatic(route string, searchPaths ...string) {
+	var searchPathFS []http.FileSystem
+	for _, searchPath := range searchPaths {
+		searchPathFS = append(searchPathFS, http.Dir(searchPath))
+	}
+	sfs := NewStaticFileServer(searchPathFS...).WithLogger(a.log)
 	mountedRoute := a.createStaticMountRoute(route)
 	a.statics[mountedRoute] = sfs
 	a.Handle("GET", mountedRoute, a.renderAction(a.middlewarePipeline(sfs.Action)))
 }
 
-// ServeStaticCached serves files from the given file system root.
+// ServeStaticCached serves files from the given file system root(s).
 // If the path does not end with "/*filepath" that suffix will be added for you internally.
-func (a *App) ServeStaticCached(route, filepath string) {
-	sfs := NewCachedStaticFileServer(http.Dir(filepath))
+func (a *App) ServeStaticCached(route string, searchPaths ...string) {
+	var searchPathFS []http.FileSystem
+	for _, searchPath := range searchPaths {
+		searchPathFS = append(searchPathFS, http.Dir(searchPath))
+	}
+	sfs := NewCachedStaticFileServer(searchPathFS...)
+	sfs.WithLogger(a.log)
 	mountedRoute := a.createStaticMountRoute(route)
 	a.statics[mountedRoute] = sfs
 	a.Handle("GET", mountedRoute, a.renderAction(a.middlewarePipeline(sfs.Action)))

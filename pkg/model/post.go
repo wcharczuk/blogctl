@@ -4,26 +4,25 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/alecthomas/template"
 	"github.com/wcharczuk/blogctl/pkg/constants"
 )
 
 // Post is a single post item.
 type Post struct {
-	OriginalPath string `json:"originalPath" yaml:"originalPath"`
 	OutputPath   string `json:"outputPath" yaml:"outputPath"`
 	Slug         string `json:"slug" yaml:"slug"`
+	TemplatePath string `json:"templatePath" yaml:"templatePath"`
+	ImagePath    string `json:"originalPath" yaml:"originalPath"`
 	Image        Image  `json:"image" yaml:"image"`
 	Meta         Meta   `json:"meta" yaml:"meta"`
 
-	Previous *Post              `json:"-" yaml:"-"`
-	Next     *Post              `json:"-" yaml:"-"`
-	Template *template.Template `json:"-"`
+	Previous *Post `json:"-" yaml:"-"`
+	Next     *Post `json:"-" yaml:"-"`
 }
 
 // IsZero returns if the post is set.
 func (p Post) IsZero() bool {
-	return p.OriginalPath == ""
+	return p.ImagePath == "" && p.TemplatePath == ""
 }
 
 // HasPrevious returns if there is a previous post.
@@ -37,12 +36,8 @@ func (p Post) HasNext() bool {
 }
 
 // TitleOrDefault returns the title for the post.
-// It is coalesced from the meta.Title and the filename.
 func (p Post) TitleOrDefault() string {
-	if p.Meta.Title != "" {
-		return p.Meta.Title
-	}
-	return filepath.Base(p.OriginalPath)
+	return p.Meta.Title
 }
 
 // SlugIndex is a helper that returns the fully qualified path for the post's index.html.
@@ -53,7 +48,7 @@ func (p Post) SlugIndex() string {
 
 // ImageSourceOriginal returns the fully qualified image source path.
 func (p Post) ImageSourceOriginal() string {
-	return filepath.Join(p.Slug, constants.ImageOriginal)
+	return filepath.Join(p.Slug, constants.FileImageOriginal)
 }
 
 // ImageSourceForSize returns the image source for a given image size in pixels.

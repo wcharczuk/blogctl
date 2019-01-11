@@ -203,122 +203,122 @@
 		{
 			"checksumSHA1": "KNsSwTpwBqhwvmMuICFuWn93kMU=",
 			"path": "github.com/blend/go-sdk/assert",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "tokV9iD/8tOZe514E0nS7fhgXnw=",
 			"path": "github.com/blend/go-sdk/async",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "7b7/EaX6sSSkmSLXdHG4/fU7opQ=",
 			"path": "github.com/blend/go-sdk/collections",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "fEPFUpdeixrgTQXU8sFAP/FQy+E=",
 			"path": "github.com/blend/go-sdk/configutil",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "8IGlBLju/JqiCd1RBihozsVuAJM=",
 			"path": "github.com/blend/go-sdk/env",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "cWZYZC6IoG2gEV4VZGySDwLxv0U=",
 			"path": "github.com/blend/go-sdk/exception",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "EKGQ3AeOwFPJZ/PaC+gRGbbJLQo=",
 			"path": "github.com/blend/go-sdk/fileutil",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "Z/alz+gibYesCpnBlASOPdZcA8U=",
 			"path": "github.com/blend/go-sdk/graceful",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "t5DaOiUotsLPO29YFwahhwH1XMM=",
 			"path": "github.com/blend/go-sdk/jwt",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "WHpG1rqtmJ1rZC1g3Sl9Pe53cIk=",
 			"path": "github.com/blend/go-sdk/logger",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "vrHk5MNAg2eoNBVogmoZ+zmlC4Y=",
 			"path": "github.com/blend/go-sdk/mathutil",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "PbqR2BVd//yiGU/i71veyoAMqTY=",
 			"path": "github.com/blend/go-sdk/reflectutil",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "oExKny/QCb+OIU9x0b8StyOH/L4=",
 			"path": "github.com/blend/go-sdk/semver",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "ymsDznl0ziVNy7Jui6MEKoV23TM=",
 			"path": "github.com/blend/go-sdk/sh",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "7+tG6UxytLkQtC8tdO1vZjw1O28=",
 			"path": "github.com/blend/go-sdk/stringutil",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "5/SXSx2JDFYxPnPYD0927YOTf30=",
 			"path": "github.com/blend/go-sdk/template",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "IGxCLK4Yd35HS7UsvR0FFdZftfg=",
 			"path": "github.com/blend/go-sdk/uuid",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
-			"checksumSHA1": "5cNeUpDVXcjJdXDl4CAXZRUupJo=",
+			"checksumSHA1": "XjpHklHBWeCZODgZJez1XEjqp/4=",
 			"path": "github.com/blend/go-sdk/web",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "8dUJ/cObxjLRfijGxf7c1Wv9Hto=",
 			"path": "github.com/blend/go-sdk/webutil",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "u3ZusJ2kQDhjjD0P3Qj92uUtdc4=",
 			"path": "github.com/blend/go-sdk/yaml",
-			"revision": "93e26f85e95c3c6fc75dba1ca9f462833112c0a4",
-			"revisionTime": "2019-01-04T21:05:14Z"
+			"revision": "1756488c39a66124106672b9b75d5de906db9add",
+			"revisionTime": "2019-01-10T23:58:41Z"
 		},
 		{
 			"checksumSHA1": "VvZKmbuBN1QAG699KduTdmSPwA4=",

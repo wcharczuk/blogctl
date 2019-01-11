@@ -30,9 +30,10 @@ const (
 
 // OutputFiles are known output file names.
 const (
-	FileIndex = "index.html"
-	FileMeta  = "meta.yml"
-	FileData  = "data.json"
+	FileIndex         = "index.html"
+	FileMeta          = "meta.yml"
+	FileData          = "data.json"
+	FileImageOriginal = "original.jpg"
 )
 
 // Sizes are the default sizes for the resized images.
@@ -54,9 +55,8 @@ var (
 	}
 )
 
-// ImageOriginal is the original image.
+// ImageSizeFormat is the format for the thumbnail images..
 const (
-	ImageOriginal   = "original.jpg"
 	ImageSizeFormat = "%d.jpg"
 )
 
@@ -73,7 +73,7 @@ var (
 		ExtensionJPG,
 		ExtensionJPEG,
 	}
-	TemplateExtension = []string{
+	TemplateExtensions = []string{
 		ExtensionHTML,
 	}
 )

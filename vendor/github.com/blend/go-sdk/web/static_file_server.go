@@ -9,16 +9,16 @@ import (
 )
 
 // NewStaticFileServer returns a new static file cache.
-func NewStaticFileServer(fs http.FileSystem) *StaticFileServer {
+func NewStaticFileServer(searchPaths ...http.FileSystem) *StaticFileServer {
 	return &StaticFileServer{
-		fileSystem: fs,
+		searchPaths: searchPaths,
 	}
 }
 
 // StaticFileServer is a cache of static files.
 type StaticFileServer struct {
 	log          logger.Log
-	fileSystem   http.FileSystem
+	searchPaths  []http.FileSystem
 	rewriteRules []RewriteRule
 	middleware   Action
 	headers      http.Header
@@ -81,27 +81,44 @@ func (sc *StaticFileServer) Action(r *Ctx) Result {
 	return sc.ServeFile(r)
 }
 
-// ServeFile writes the file to the response without running middleware.
-func (sc *StaticFileServer) ServeFile(r *Ctx) Result {
-	for key, values := range sc.headers {
-		for _, value := range values {
-			r.Response().Header().Set(key, value)
-		}
-	}
-
-	filePath, err := r.RouteParam("filepath")
-	if err != nil {
-		return r.DefaultResultProvider().InternalError(err)
-	}
-
+// ResolveFile resolves a file from rewrite rules and search paths.
+func (sc *StaticFileServer) ResolveFile(filePath string) (f http.File, err error) {
 	for _, rule := range sc.rewriteRules {
 		if matched, newFilePath := rule.Apply(filePath); matched {
 			filePath = newFilePath
 		}
 	}
 
-	f, err := sc.fileSystem.Open(filePath)
-	if f == nil || os.IsNotExist(err) {
+	// for each searchpath, sniff if the file exists ...
+	var openErr error
+	for _, searchPath := range sc.searchPaths {
+		f, openErr = searchPath.Open(filePath)
+		if openErr == nil {
+			break
+		}
+	}
+	if openErr != nil && !os.IsNotExist(openErr) {
+		err = openErr
+		return
+	}
+	return
+}
+
+// ServeFile writes the file to the response without running middleware.
+func (sc *StaticFileServer) ServeFile(r *Ctx) Result {
+	filePath, err := r.RouteParam("filepath")
+	if err != nil {
+		return r.DefaultResultProvider().BadRequest(err)
+	}
+
+	for key, values := range sc.headers {
+		for _, value := range values {
+			r.Response().Header().Set(key, value)
+		}
+	}
+
+	f, err := sc.ResolveFile(filePath)
+	if f == nil || (err != nil && os.IsNotExist(err)) {
 		return r.DefaultResultProvider().NotFound()
 	}
 	if err != nil {
@@ -109,12 +126,12 @@ func (sc *StaticFileServer) ServeFile(r *Ctx) Result {
 	}
 	defer f.Close()
 
-	d, err := f.Stat()
+	finfo, err := f.Stat()
 	if err != nil {
 		return r.DefaultResultProvider().InternalError(err)
 	}
+	http.ServeContent(r.Response(), r.Request(), filePath, finfo.ModTime(), f)
 
-	http.ServeContent(r.Response(), r.Request(), filePath, d.ModTime(), f)
 	return nil
 
 }
