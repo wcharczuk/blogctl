@@ -381,6 +381,80 @@ func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) erro
 	return nil
 }
 
+// CleanThumbnailCache cleans the thumbnail cache by purging cached thumbnails for posts that may have been deleted.
+func (e Engine) CleanThumbnailCache() error {
+	// for each post, generate the sha of the image ...
+	postsPath := e.Config.PostsPathOrDefault()
+	logger.MaybeSyncInfof(e.Log, "searching `%s` for posts", postsPath)
+	postSums := map[string]bool{}
+	err := filepath.Walk(postsPath, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if currentPath == postsPath {
+			return nil
+		}
+		if info.IsDir() {
+			files, err := ListDirectory(currentPath)
+			if err != nil {
+				return err
+			}
+			for _, fi := range files {
+				name := fi.Name()
+				if HasExtension(name, constants.ImageExtensions...) {
+					contents, err := ioutil.ReadFile(filepath.Join(currentPath, name))
+					if err != nil {
+						return err
+					}
+					etag, err := fileutil.ETag(contents)
+					if err != nil {
+						return err
+					}
+
+					postSums[etag] = true
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// for each thumbnail cache folder
+	var orphanedCachedPosts []string
+	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
+	err = filepath.Walk(thumbnailCachePath, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if currentPath == thumbnailCachePath {
+			return nil
+		}
+		if info.IsDir() {
+			name := info.Name()
+			// see if there is a matching sha'd image
+			if _, ok := postSums[name]; !ok {
+				orphanedCachedPosts = append(orphanedCachedPosts, name)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// purge folders
+	for _, path := range orphanedCachedPosts {
+		if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
+			return err
+		}
+		logger.MaybeSyncInfof(e.Log, "purging orphaned cached directory `%s`", path)
+	}
+
+	return nil
+}
+
 // CompileTemplate compiles a template.
 func (e Engine) CompileTemplate(templatePath string, partials []string) (*template.Template, error) {
 	contents, err := ioutil.ReadFile(templatePath)

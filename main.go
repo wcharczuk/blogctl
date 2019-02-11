@@ -36,6 +36,7 @@ func main() {
 	blogctl.AddCommand(cmd.Init(configPath, log))
 	blogctl.AddCommand(cmd.New(configPath, log))
 	blogctl.AddCommand(cmd.Build(configPath, log))
+	blogctl.AddCommand(cmd.Clean(configPath, log))
 	blogctl.AddCommand(cmd.Deploy(configPath, log))
 	blogctl.AddCommand(cmd.Server(configPath, log))
 
