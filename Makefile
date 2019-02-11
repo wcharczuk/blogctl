@@ -19,6 +19,8 @@ cover:
 test:
 	@go test -timeout 5s ./...
 
+install: build-ctl
+
 build-ctl:
 	@echo "$(VERSION)/$(GIT_REF) >> building blogctl"
 	@go install -ldflags="-X github.com/wcharczuk/blogctl/pkg/config.Version=${VERSION} -X github.com/wcharczuk/blogctl/pkg/config.GitRef=${GIT_REF}" .
