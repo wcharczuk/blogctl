@@ -8,7 +8,8 @@ import (
 
 // Clean returns the clean command.
 func Clean(configPath *string, log *logger.Logger) *cobra.Command {
-	return &cobra.Command{
+	var dryRun *bool
+	cmd := &cobra.Command{
 		Use:     "clean",
 		Short:   "Clean the thumbnail cache",
 		Aliases: []string{"c"},
@@ -17,9 +18,12 @@ func Clean(configPath *string, log *logger.Logger) *cobra.Command {
 			if err != nil {
 				log.SyncFatalExit(err)
 			}
-			if err := engine.New(config).WithLogger(log.SubContext("clean")).CleanThumbnailCache(); err != nil {
+			if err := engine.New(config).WithLogger(log.SubContext("clean")).CleanThumbnailCache(*dryRun); err != nil {
 				log.SyncFatalExit(err)
 			}
 		},
 	}
+
+	dryRun = cmd.Flags().Bool("dry-run", false, "If we should only print which paths we would delete")
+	return cmd
 }

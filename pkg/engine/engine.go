@@ -382,7 +382,7 @@ func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) erro
 }
 
 // CleanThumbnailCache cleans the thumbnail cache by purging cached thumbnails for posts that may have been deleted.
-func (e Engine) CleanThumbnailCache() error {
+func (e Engine) CleanThumbnailCache(dryRun bool) error {
 	// for each post, generate the sha of the image ...
 	postsPath := e.Config.PostsPathOrDefault()
 	logger.MaybeSyncInfof(e.Log, "searching `%s` for posts", postsPath)
@@ -446,8 +446,10 @@ func (e Engine) CleanThumbnailCache() error {
 
 	// purge folders
 	for _, path := range orphanedCachedPosts {
-		if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
-			return err
+		if !dryRun {
+			if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
+				return err
+			}
 		}
 		logger.MaybeSyncInfof(e.Log, "purging orphaned cached directory `%s`", path)
 	}
