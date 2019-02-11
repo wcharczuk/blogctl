@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/blend/go-sdk/exception"
+	"github.com/blend/go-sdk/fileutil"
 	"github.com/blend/go-sdk/logger"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/constants"
-	"github.com/wcharczuk/blogctl/pkg/fileutil"
 	"github.com/wcharczuk/blogctl/pkg/model"
 	"github.com/wcharczuk/blogctl/pkg/resize"
 	"github.com/wcharczuk/blogctl/pkg/stringutil"
@@ -57,17 +57,12 @@ func (e Engine) Generate() error {
 		return err
 	}
 
-	partials, err := e.DiscoverPartials()
+	renderContext, err := e.BuildRenderContext()
 	if err != nil {
 		return err
 	}
 
-	data, err := e.DiscoverPosts(partials...)
-	if err != nil {
-		return err
-	}
-
-	if err := e.Render(data, partials...); err != nil {
+	if err := e.Render(renderContext); err != nil {
 		return err
 	}
 
@@ -76,7 +71,7 @@ func (e Engine) Generate() error {
 
 // InitializeOutputPath creates the output path if it doesn't exist.
 func (e Engine) InitializeOutputPath() error {
-	if fileutil.Exists(e.Config.OutputPathOrDefault()) {
+	if Exists(e.Config.OutputPathOrDefault()) {
 		if err := exception.New(os.RemoveAll(e.Config.OutputPathOrDefault())); err != nil {
 			return err
 		}
@@ -86,14 +81,14 @@ func (e Engine) InitializeOutputPath() error {
 
 // InitializeThumbnailCache creates the output path if it doesn't exist.
 func (e Engine) InitializeThumbnailCache() error {
-	if fileutil.Exists(e.Config.ThumbnailCachePathOrDefault()) {
+	if Exists(e.Config.ThumbnailCachePathOrDefault()) {
 		return nil
 	}
 	return MakeDir(e.Config.ThumbnailCachePathOrDefault())
 }
 
 // DiscoverPosts generates the blog data.
-func (e Engine) DiscoverPosts(partials ...string) (*model.Data, error) {
+func (e Engine) DiscoverPosts() (*model.Data, error) {
 	slugTemplate, err := e.ParseSlugTemplate()
 	if err != nil {
 		return nil, err
@@ -119,7 +114,7 @@ func (e Engine) DiscoverPosts(partials ...string) (*model.Data, error) {
 			logger.MaybeSyncInfof(e.Log, "reading post `%s`", currentPath)
 
 			// check if we have an image
-			post, err := e.GeneratePost(slugTemplate, currentPath, partials...)
+			post, err := e.GeneratePost(slugTemplate, currentPath)
 			if err != nil {
 				return err
 			}
@@ -170,8 +165,24 @@ func (e Engine) DiscoverPosts(partials ...string) (*model.Data, error) {
 	return &output, nil
 }
 
+// BuildRenderContext builds the render context used by the render function.
+func (e Engine) BuildRenderContext() (*model.RenderContext, error) {
+	partials, err := e.DiscoverPartials()
+	if err != nil {
+		return nil, err
+	}
+	data, err := e.DiscoverPosts()
+	if err != nil {
+		return nil, err
+	}
+	return &model.RenderContext{
+		Data:     data,
+		Partials: partials,
+	}, nil
+}
+
 // Render writes the templates out for each of the posts.
-func (e Engine) Render(data *model.Data, partials ...string) error {
+func (e Engine) Render(renderContext *model.RenderContext) error {
 	outputPath := e.Config.OutputPathOrDefault()
 
 	pagesPath := e.Config.PagesPathOrDefault()
@@ -181,41 +192,41 @@ func (e Engine) Render(data *model.Data, partials ...string) error {
 	}
 	for _, page := range pages {
 		logger.MaybeSyncInfof(e.Log, "rendering page `%s`", page.Name())
-		pageTemplate, err := e.CompileTemplate(filepath.Join(pagesPath, page.Name()), partials)
+		pageTemplate, err := e.CompileTemplate(filepath.Join(pagesPath, page.Name()), renderContext.Partials)
 		if err != nil {
 			return err
 		}
 		pageOutputPath := filepath.Join(outputPath, page.Name())
 		if err := e.WriteTemplate(pageTemplate, pageOutputPath, &model.ViewModel{
 			Config: e.Config,
-			Post:   model.Posts(data.Posts).First(),
-			Posts:  data.Posts,
-			Tags:   data.Tags,
+			Post:   model.Posts(renderContext.Data.Posts).First(),
+			Posts:  renderContext.Data.Posts,
+			Tags:   renderContext.Data.Tags,
 		}); err != nil {
 			return err
 		}
 	}
 
+	var defaultImagePostTemplate *template.Template
 	imagePostTemplatePath := e.Config.ImagePostTemplateOrDefault()
-	var imagePostTemplate *template.Template
 	if imagePostTemplatePath != "" {
-		imagePostTemplate, err = e.CompileTemplate(imagePostTemplatePath, partials)
+		defaultImagePostTemplate, err = e.CompileTemplate(imagePostTemplatePath, renderContext.Partials)
 		if err != nil {
 			return err
 		}
 	}
 
+	var defaultTextPostTemplate *template.Template
 	textPostTemplatePath := e.Config.TextPostTemplateOrDefault()
-	var textPostTemplate *template.Template
 	if textPostTemplatePath != "" {
-		textPostTemplate, err = e.CompileTemplate(textPostTemplatePath, partials)
+		defaultTextPostTemplate, err = e.CompileTemplate(textPostTemplatePath, renderContext.Partials)
 		if err != nil {
 			return err
 		}
 	}
 
 	// foreach post, render the post with single to <slug>/index.html
-	for _, post := range data.Posts {
+	for _, post := range renderContext.Data.Posts {
 		slugPath := filepath.Join(outputPath, post.Slug)
 		logger.MaybeSyncInfof(e.Log, "rendering post `%s`", post.TitleOrDefault())
 
@@ -223,15 +234,23 @@ func (e Engine) Render(data *model.Data, partials ...string) error {
 			return exception.New(err)
 		}
 
-		postTemplate := imagePostTemplate
-		if post.Image.IsZero() {
-			postTemplate = textPostTemplate
+		var postTemplate *template.Template
+		if post.TemplatePath != "" {
+			if postTemplate, err = e.CompileTemplate(post.TemplatePath, renderContext.Partials); err != nil {
+				return err
+			}
+		} else {
+			if post.Image.IsZero() {
+				postTemplate = defaultTextPostTemplate
+			} else {
+				postTemplate = defaultImagePostTemplate
+			}
 		}
 
 		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
 			Config: e.Config,
-			Posts:  data.Posts,
-			Tags:   data.Tags,
+			Posts:  renderContext.Data.Posts,
+			Tags:   renderContext.Data.Tags,
 			Post:   post,
 		}); err != nil {
 			return err
@@ -246,20 +265,20 @@ func (e Engine) Render(data *model.Data, partials ...string) error {
 
 	if !e.Config.SkipTags {
 		tagTemplatePath := e.Config.TagTemplateOrDefault()
-		if len(tagTemplatePath) > 0 && fileutil.Exists(tagTemplatePath) {
-			tagTemplate, err := e.CompileTemplate(tagTemplatePath, partials)
+		if len(tagTemplatePath) > 0 && Exists(tagTemplatePath) {
+			tagTemplate, err := e.CompileTemplate(tagTemplatePath, renderContext.Partials)
 			if err != nil {
 				return err
 			}
-			for _, tag := range data.Tags {
+			for _, tag := range renderContext.Data.Tags {
 				tagPath := filepath.Join(outputPath, "tags", stringutil.Slugify(tag.Tag))
 				if err := MakeDir(tagPath); err != nil {
 					return exception.New(err)
 				}
 				if err := e.WriteTemplate(tagTemplate, filepath.Join(tagPath, constants.FileIndex), &model.ViewModel{
 					Config: e.Config,
-					Posts:  data.Posts,
-					Tags:   data.Tags,
+					Posts:  renderContext.Data.Posts,
+					Tags:   renderContext.Data.Tags,
 					Tag:    tag,
 				}); err != nil {
 					return err
@@ -274,9 +293,85 @@ func (e Engine) Render(data *model.Data, partials ...string) error {
 	}
 
 	if !e.Config.SkipJSONData {
-		if err := e.WriteDataJSON(data, filepath.Join(outputPath, constants.FileData)); err != nil {
+		if err := e.WriteDataJSON(renderContext.Data, filepath.Join(outputPath, constants.FileData)); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// CleanThumbnailCache cleans the thumbnail cache by purging cached thumbnails for posts that may have been deleted.
+func (e Engine) CleanThumbnailCache(dryRun bool) error {
+	// for each post, generate the sha of the image ...
+	postsPath := e.Config.PostsPathOrDefault()
+	logger.MaybeSyncInfof(e.Log, "searching `%s` for posts", postsPath)
+	postSums := map[string]bool{}
+	err := filepath.Walk(postsPath, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if currentPath == postsPath {
+			return nil
+		}
+		if info.IsDir() {
+			files, err := ListDirectory(currentPath)
+			if err != nil {
+				return err
+			}
+			for _, fi := range files {
+				name := fi.Name()
+				if HasExtension(name, constants.ImageExtensions...) {
+					contents, err := ioutil.ReadFile(filepath.Join(currentPath, name))
+					if err != nil {
+						return exception.New(err)
+					}
+					etag, err := fileutil.ETag(contents)
+					if err != nil {
+						return err
+					}
+
+					postSums[etag] = true
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return exception.New(err)
+	}
+
+	// for each thumbnail cache folder
+	var orphanedCachedPosts []string
+	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
+	err = filepath.Walk(thumbnailCachePath, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if currentPath == thumbnailCachePath {
+			return nil
+		}
+		if info.IsDir() {
+			name := info.Name()
+			// see if there is a matching sha'd image
+			if _, ok := postSums[name]; !ok {
+				orphanedCachedPosts = append(orphanedCachedPosts, name)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return exception.New(err)
+	}
+
+	// purge folders
+	for _, path := range orphanedCachedPosts {
+		if !dryRun {
+			if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
+				return exception.New(err)
+			}
+		}
+		logger.MaybeSyncInfof(e.Log, "purging orphaned cached directory `%s`", path)
 	}
 
 	return nil
@@ -287,6 +382,7 @@ func (e Engine) Render(data *model.Data, partials ...string) error {
 //
 
 // DiscoverPartials reads all the partials named in the config.
+// These are then injected into any subsequent renders as potential helper views.
 func (e Engine) DiscoverPartials() ([]string, error) {
 	partialsPath := e.Config.PartialsPathOrDefault()
 
@@ -307,10 +403,7 @@ func (e Engine) DiscoverPartials() ([]string, error) {
 }
 
 // GeneratePost reads post contents and metadata from a folder.
-func (e Engine) GeneratePost(slugTemplate *template.Template, path string, partials ...string) (*model.Post, error) {
-	// sniff for image file
-	// sniff for template file
-	// sniff for metadata
+func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*model.Post, error) {
 	files, err := ListDirectory(path)
 	if err != nil {
 		return nil, err
@@ -340,9 +433,6 @@ func (e Engine) GeneratePost(slugTemplate *template.Template, path string, parti
 			post.TemplatePath = filepath.Join(path, name)
 			if modTime.Before(fi.ModTime()) {
 				modTime = fi.ModTime()
-			}
-			if post.Template, err = e.CompileTemplate(post.TemplatePath, partials); err != nil {
-				return nil, err
 			}
 		}
 	}
@@ -376,82 +466,6 @@ func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) erro
 
 	if err := e.CopyThumbnails(etag, destinationPath); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-// CleanThumbnailCache cleans the thumbnail cache by purging cached thumbnails for posts that may have been deleted.
-func (e Engine) CleanThumbnailCache(dryRun bool) error {
-	// for each post, generate the sha of the image ...
-	postsPath := e.Config.PostsPathOrDefault()
-	logger.MaybeSyncInfof(e.Log, "searching `%s` for posts", postsPath)
-	postSums := map[string]bool{}
-	err := filepath.Walk(postsPath, func(currentPath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if currentPath == postsPath {
-			return nil
-		}
-		if info.IsDir() {
-			files, err := ListDirectory(currentPath)
-			if err != nil {
-				return err
-			}
-			for _, fi := range files {
-				name := fi.Name()
-				if HasExtension(name, constants.ImageExtensions...) {
-					contents, err := ioutil.ReadFile(filepath.Join(currentPath, name))
-					if err != nil {
-						return err
-					}
-					etag, err := fileutil.ETag(contents)
-					if err != nil {
-						return err
-					}
-
-					postSums[etag] = true
-				}
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	// for each thumbnail cache folder
-	var orphanedCachedPosts []string
-	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
-	err = filepath.Walk(thumbnailCachePath, func(currentPath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if currentPath == thumbnailCachePath {
-			return nil
-		}
-		if info.IsDir() {
-			name := info.Name()
-			// see if there is a matching sha'd image
-			if _, ok := postSums[name]; !ok {
-				orphanedCachedPosts = append(orphanedCachedPosts, name)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	// purge folders
-	for _, path := range orphanedCachedPosts {
-		if !dryRun {
-			if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
-				return err
-			}
-		}
-		logger.MaybeSyncInfof(e.Log, "purging orphaned cached directory `%s`", path)
 	}
 
 	return nil
@@ -514,7 +528,7 @@ func (e Engine) GenerateThumbnail(original image.Image, size int, etag string) e
 	// copy over the cached version
 	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
 	thumbnailPath := filepath.Join(thumbnailCachePath, etag, fmt.Sprintf("%d.jpg", size))
-	if !fileutil.Exists(thumbnailPath) {
+	if !Exists(thumbnailPath) {
 		logger.MaybeSyncInfof(e.Log, "generating cached thumbnail `%s` @ %dpx", etag, size)
 		if err := MakeDir(filepath.Join(thumbnailCachePath, etag)); err != nil {
 			return err
@@ -532,7 +546,7 @@ func (e Engine) ShouldGenerateThumbnails(etag string) bool {
 	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
 	for _, size := range e.Config.ImageSizesOrDefault() {
 		thumbnailPath := filepath.Join(thumbnailCachePath, etag, fmt.Sprintf(constants.ImageSizeFormat, size))
-		if !fileutil.Exists(thumbnailPath) {
+		if !Exists(thumbnailPath) {
 			return true
 		}
 	}

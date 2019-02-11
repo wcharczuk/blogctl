@@ -214,3 +214,9 @@ func WriteYAML(path string, obj interface{}) error {
 	}
 	return exception.New(ioutil.WriteFile(path, contents, 0666))
 }
+
+// Exists returns if a given file exists.
+func Exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}

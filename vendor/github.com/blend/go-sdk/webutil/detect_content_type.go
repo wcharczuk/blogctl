@@ -1,4 +1,4 @@
-package fileutil
+package webutil
 
 import (
 	"net/http"

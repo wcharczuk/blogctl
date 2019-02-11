@@ -12,11 +12,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+
 	"github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/logger"
+	"github.com/blend/go-sdk/webutil"
 
 	"github.com/wcharczuk/blogctl/pkg/aws"
-	"github.com/wcharczuk/blogctl/pkg/fileutil"
 )
 
 // New returns a new manager.
@@ -103,7 +104,7 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 		if !ok || remoteETag != localETag {
 			logger.MaybeSyncInfof(m.Log, "putting %s", key)
 
-			contentType, err := fileutil.DetectContentType(currentPath)
+			contentType, err := webutil.DetectContentType(currentPath)
 			if err != nil {
 				return err
 			}

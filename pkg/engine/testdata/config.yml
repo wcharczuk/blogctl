@@ -6,6 +6,7 @@ outputPath: ./testdata/dist
 pagesPath: ./testdata/layout/pages
 partialsPath: ./testdata/layout/partials
 staticsPath: ./testdata/static
-postTemplatePath: ./testdata/layout/post.html
+imagePostTemplatePath: ./testdata/layout/image.html
+textPostTemplatePath: ./testdata/layout/text.html
 tagTemplatePath: ./testdata/layout/tag.html
 thumbnailCachePath: ./testdata/thumbnails
