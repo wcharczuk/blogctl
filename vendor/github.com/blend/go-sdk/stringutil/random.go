@@ -11,11 +11,7 @@ var (
 
 // Random returns a random selection of runes from the set.
 func Random(runeset []rune, length int) string {
-	runes := make([]rune, length)
-	for index := range runes {
-		runes[index] = runeset[provider.Intn(len(runeset))]
-	}
-	return string(runes)
+	return Runeset(runeset).Random(length)
 }
 
 // CombineRunsets combines given runsets into a single runset.

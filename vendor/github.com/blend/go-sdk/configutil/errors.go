@@ -14,6 +14,16 @@ const (
 	ErrInvalidConfigExtension = exception.Class("config extension invalid")
 )
 
+// AnyError returns the first non-nil error.
+func AnyError(errors ...error) error {
+	for _, err := range errors {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // IsIgnored returns if we should ignore the config read error.
 func IsIgnored(err error) bool {
 	if err == nil {

@@ -66,7 +66,7 @@ func MaybeSyncWarningf(log SyncErrorOutputReceiver, format string, args ...inter
 
 // MaybeWarning triggers Warning if the logger is set.
 func MaybeWarning(log ErrorReceiver, err error) {
-	if log == nil {
+	if log == nil || err == nil {
 		return
 	}
 	log.Warning(err)
@@ -74,7 +74,7 @@ func MaybeWarning(log ErrorReceiver, err error) {
 
 // MaybeSyncWarning triggers SyncWarning if the logger is set.
 func MaybeSyncWarning(log SyncErrorReceiver, err error) {
-	if log == nil {
+	if log == nil || err == nil {
 		return
 	}
 	log.SyncWarning(err)
@@ -98,7 +98,7 @@ func MaybeSyncErrorf(log SyncErrorOutputReceiver, format string, args ...interfa
 
 // MaybeError triggers Error if the logger is set.
 func MaybeError(log ErrorReceiver, err error) {
-	if log == nil {
+	if log == nil || err == nil {
 		return
 	}
 	log.Error(err)
@@ -106,7 +106,7 @@ func MaybeError(log ErrorReceiver, err error) {
 
 // MaybeSyncError triggers SyncError if the logger is set.
 func MaybeSyncError(log SyncErrorReceiver, err error) {
-	if log == nil {
+	if log == nil || err == nil {
 		return
 	}
 	log.SyncError(err)
@@ -130,7 +130,7 @@ func MaybeSyncFatalf(log SyncErrorOutputReceiver, format string, args ...interfa
 
 // MaybeFatal triggers Fatal if the logger is set.
 func MaybeFatal(log ErrorReceiver, err error) {
-	if log == nil {
+	if log == nil || err == nil {
 		return
 	}
 	log.Fatal(err)
@@ -138,7 +138,7 @@ func MaybeFatal(log ErrorReceiver, err error) {
 
 // MaybeSyncFatal triggers SyncFatal if the logger is set.
 func MaybeSyncFatal(log SyncErrorReceiver, err error) {
-	if log == nil {
+	if log == nil || err == nil {
 		return
 	}
 	log.SyncFatal(err)

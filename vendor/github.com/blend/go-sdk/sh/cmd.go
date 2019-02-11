@@ -1,6 +1,7 @@
 package sh
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"strings"
@@ -50,6 +51,15 @@ func CmdParsed(statement string) (*exec.Cmd, error) {
 	return Cmd(parts[0])
 }
 
+// CmdParsedContext returns a command for a full comamnd statement within a context..
+func CmdParsedContext(ctx context.Context, statement string) (*exec.Cmd, error) {
+	parts := strings.SplitN(statement, " ", 2)
+	if len(parts) > 1 {
+		return Cmd(parts[0], parts[1])
+	}
+	return CmdContext(ctx, parts[0])
+}
+
 // MustCmd returns a new command with the fully qualified path of the executable.
 // It panics on error.
 func MustCmd(command string, args ...string) *exec.Cmd {
@@ -67,6 +77,17 @@ func Cmd(command string, args ...string) (*exec.Cmd, error) {
 		return nil, err
 	}
 	cmd := exec.Command(absoluteCommand, args...)
+	cmd.Env = os.Environ()
+	return cmd, nil
+}
+
+// CmdContext returns a new command with the fully qualified path of the executable within a context.
+func CmdContext(ctx context.Context, command string, args ...string) (*exec.Cmd, error) {
+	absoluteCommand, err := exec.LookPath(command)
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.CommandContext(ctx, absoluteCommand, args...)
 	cmd.Env = os.Environ()
 	return cmd, nil
 }

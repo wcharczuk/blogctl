@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/blend/go-sdk/exception"
@@ -50,7 +51,9 @@ type Ctx struct {
 
 	tracer Tracer
 
-	postBody              []byte
+	postBody []byte
+	form     url.Values
+
 	defaultResultProvider ResultProvider
 
 	state       State
@@ -286,8 +289,8 @@ func (rc *Ctx) Param(name string) (string, error) {
 			}
 		}
 
-		formValue := rc.request.FormValue(name)
-		if len(formValue) > 0 {
+		formValue, err := rc.FormValue(name)
+		if err == nil {
 			return formValue, nil
 		}
 
@@ -321,7 +324,10 @@ func (rc *Ctx) QueryValue(key string) (value string, err error) {
 
 // FormValue returns a form value.
 func (rc *Ctx) FormValue(key string) (output string, err error) {
-	if value := rc.request.FormValue(key); len(value) > 0 {
+	if err = rc.ensureForm(); err != nil {
+		return
+	}
+	if value := rc.form.Get(key); len(value) > 0 {
 		output = value
 		return
 	}
@@ -606,6 +612,32 @@ func (rc *Ctx) RouteParams() RouteParameters {
 // --------------------------------------------------------------------------------
 // internal methods
 // --------------------------------------------------------------------------------
+
+func (rc *Ctx) ensureForm() error {
+	if rc.form != nil {
+		return nil
+	}
+	if rc.Request().Form != nil {
+		rc.form = rc.Request().Form
+		return nil
+	}
+
+	body, err := rc.PostBody()
+	if err != nil {
+		return err
+	}
+
+	r := &http.Request{
+		Method: rc.Request().Method,
+		Header: rc.Request().Header,
+		Body:   ioutil.NopCloser(bytes.NewBuffer(body)),
+	}
+	if err := r.ParseForm(); err != nil {
+		return err
+	}
+	rc.form = r.Form
+	return nil
+}
 
 func (rc *Ctx) getCookieDomain() string {
 	if rc.app != nil && rc.app.baseURL != nil {

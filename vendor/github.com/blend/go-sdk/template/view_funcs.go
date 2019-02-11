@@ -118,6 +118,7 @@ func (vf ViewFuncs) FuncMap() map[string]interface{} {
 		"quote":                       vf.Quote,
 		"strip_quotes":                vf.StripQuotes,
 		/* arrays */
+		"reverse":  vf.Reverse,
 		"slice":    vf.Slice,
 		"first":    vf.First,
 		"at_index": vf.AtIndex,
@@ -495,6 +496,21 @@ func (vf ViewFuncs) RandomLettersWithNumbersAndSymbols(count int) string {
 //
 // array functions
 //
+
+// Reverse reverses an array.
+func (vf ViewFuncs) Reverse(collection interface{}) (interface{}, error) {
+	value := reflect.ValueOf(collection)
+
+	if value.Type().Kind() != reflect.Slice {
+		return nil, fmt.Errorf("input must be a slice")
+	}
+
+	output := make([]interface{}, value.Len())
+	for index := 0; index < value.Len(); index++ {
+		output[index] = value.Index((value.Len() - 1) - index).Interface()
+	}
+	return output, nil
+}
 
 // Slice returns a subrange of a collection.
 func (vf ViewFuncs) Slice(from, to int, collection interface{}) (interface{}, error) {
