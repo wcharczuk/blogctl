@@ -205,22 +205,18 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 		}
 	}
 
+	var postTemplate *template.Template
 	for _, post := range renderContext.Data.Posts {
 		if post.TemplatePath != "" {
-			logger.MaybeSyncInfof(e.Log, "usings custom template for post `%s` (%s)", post.TitleOrDefault(), post.TemplatePath)
+			logger.MaybeSyncInfof(e.Log, "using custom template for post `%s` (%s)", post.TitleOrDefault(), post.TemplatePath)
 			if post.Template, err = e.CompileTemplate(post.TemplatePath, renderContext.Partials); err != nil {
 				return err
 			}
-		} else {
-			if post.Image.IsZero() {
-				post.Template = defaultTextPostTemplate
-			} else {
-				post.Template = defaultImagePostTemplate
-			}
 		}
-
-		if post.Template == nil {
-			return exception.New("post template resolution failed; post has no template set")
+		if post.Image.IsZero() {
+			postTemplate = defaultTextPostTemplate
+		} else {
+			postTemplate = defaultImagePostTemplate
 		}
 
 		slugPath := filepath.Join(outputPath, post.Slug)
@@ -230,7 +226,7 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 			return exception.New(err)
 		}
 
-		if err := e.RenderTemplateToFile(post.Template, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
+		if err := e.RenderTemplateToFile(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
 			Config: e.Config,
 			Posts:  renderContext.Data.Posts,
 			Tags:   renderContext.Data.Tags,
