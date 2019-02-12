@@ -42,7 +42,7 @@ const (
 	ErrPartitionCountInvalid  exception.Class = "partition count invalid; must be greater than 1"
 )
 
-func partition(index, partitions int, posts []model.Post) ([]model.Post, error) {
+func partition(index, partitions int, posts []*model.Post) ([]*model.Post, error) {
 	if partitions < 1 {
 		return nil, exception.New(ErrPartitionCountInvalid)
 	}
@@ -53,7 +53,7 @@ func partition(index, partitions int, posts []model.Post) ([]model.Post, error) 
 		return posts, nil
 	}
 
-	var output []model.Post
+	var output []*model.Post
 	for ; index < len(posts); index += partitions {
 		output = append(output, posts[index])
 	}
@@ -70,7 +70,7 @@ func setTitle(vm *model.ViewModel, title string) error {
 
 func render(post model.Post) (template.HTML, error) {
 	if post.Template == nil {
-		return "", fmt.Errorf("post template unset")
+		return "", fmt.Errorf("post has unset template; cannot render. post: %s", post.TitleOrDefault())
 	}
 	buffer := new(bytes.Buffer)
 	err := post.Template.Execute(buffer, post)

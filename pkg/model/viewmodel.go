@@ -9,7 +9,7 @@ type ViewModel struct {
 	Title  string
 	Extra  map[string]interface{}
 	Config config.Config
-	Posts  []Post
+	Posts  []*Post
 	Tags   []Tag
 
 	Post Post

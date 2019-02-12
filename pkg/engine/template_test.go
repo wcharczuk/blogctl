@@ -10,7 +10,7 @@ import (
 func TestPartitionPosts(t *testing.T) {
 	assert := assert.New(t)
 
-	posts := []model.Post{
+	posts := []*model.Post{
 		{Meta: model.Meta{Title: "one"}},
 		{Meta: model.Meta{Title: "two"}},
 		{Meta: model.Meta{Title: "three"}},

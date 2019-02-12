@@ -118,16 +118,16 @@ func (e Engine) DiscoverPosts() (*model.Data, error) {
 			if err != nil {
 				return err
 			}
-			output.Posts = append([]model.Post{*post}, output.Posts...)
+			output.Posts = append([]*model.Post{post}, output.Posts...)
 
 			if !e.Config.SkipTags {
 				for _, tag := range post.Meta.Tags {
 					if tagPosts, ok := tags[tag]; ok {
-						tagPosts.Posts = append(tagPosts.Posts, *post)
+						tagPosts.Posts = append(tagPosts.Posts, post)
 					} else {
 						tags[tag] = &model.Tag{
 							Tag:   tag,
-							Posts: []model.Post{*post},
+							Posts: []*model.Post{post},
 						}
 					}
 				}
@@ -146,10 +146,10 @@ func (e Engine) DiscoverPosts() (*model.Data, error) {
 	// create previous and next links for each post.
 	for index := range output.Posts {
 		if index > 0 {
-			output.Posts[index].Previous = &output.Posts[index-1]
+			output.Posts[index].Previous = output.Posts[index-1]
 		}
 		if index < len(output.Posts)-1 {
-			output.Posts[index].Next = &output.Posts[index+1]
+			output.Posts[index].Next = output.Posts[index+1]
 		}
 	}
 
@@ -183,29 +183,9 @@ func (e Engine) BuildRenderContext() (*model.RenderContext, error) {
 
 // Render writes the templates out for each of the posts.
 func (e Engine) Render(renderContext *model.RenderContext) error {
-	outputPath := e.Config.OutputPathOrDefault()
+	var err error
 
-	pagesPath := e.Config.PagesPathOrDefault()
-	pages, err := ListDirectory(pagesPath)
-	if err != nil {
-		return err
-	}
-	for _, page := range pages {
-		logger.MaybeSyncInfof(e.Log, "rendering page `%s`", page.Name())
-		pageTemplate, err := e.CompileTemplate(filepath.Join(pagesPath, page.Name()), renderContext.Partials)
-		if err != nil {
-			return err
-		}
-		pageOutputPath := filepath.Join(outputPath, page.Name())
-		if err := e.WriteTemplate(pageTemplate, pageOutputPath, &model.ViewModel{
-			Config: e.Config,
-			Post:   model.Posts(renderContext.Data.Posts).First(),
-			Posts:  renderContext.Data.Posts,
-			Tags:   renderContext.Data.Tags,
-		}); err != nil {
-			return err
-		}
-	}
+	outputPath := e.Config.OutputPathOrDefault()
 
 	var defaultImagePostTemplate *template.Template
 	imagePostTemplatePath := e.Config.ImagePostTemplateOrDefault()
@@ -225,8 +205,24 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 		}
 	}
 
-	// foreach post, render the post with single to <slug>/index.html
 	for _, post := range renderContext.Data.Posts {
+		if post.TemplatePath != "" {
+			logger.MaybeSyncInfof(e.Log, "usings custom template for post `%s` (%s)", post.TitleOrDefault(), post.TemplatePath)
+			if post.Template, err = e.CompileTemplate(post.TemplatePath, renderContext.Partials); err != nil {
+				return err
+			}
+		} else {
+			if post.Image.IsZero() {
+				post.Template = defaultTextPostTemplate
+			} else {
+				post.Template = defaultImagePostTemplate
+			}
+		}
+
+		if post.Template == nil {
+			return exception.New("post template resolution failed; post has no template set")
+		}
+
 		slugPath := filepath.Join(outputPath, post.Slug)
 		logger.MaybeSyncInfof(e.Log, "rendering post `%s`", post.TitleOrDefault())
 
@@ -234,24 +230,11 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 			return exception.New(err)
 		}
 
-		var postTemplate *template.Template
-		if post.TemplatePath != "" {
-			if postTemplate, err = e.CompileTemplate(post.TemplatePath, renderContext.Partials); err != nil {
-				return err
-			}
-		} else {
-			if post.Image.IsZero() {
-				postTemplate = defaultTextPostTemplate
-			} else {
-				postTemplate = defaultImagePostTemplate
-			}
-		}
-
-		if err := e.WriteTemplate(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
+		if err := e.RenderTemplateToFile(post.Template, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
 			Config: e.Config,
 			Posts:  renderContext.Data.Posts,
 			Tags:   renderContext.Data.Tags,
-			Post:   post,
+			Post:   *post,
 		}); err != nil {
 			return err
 		}
@@ -260,6 +243,28 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 			if err := e.ProcessThumbnails(post.ImagePath, slugPath); err != nil {
 				return err
 			}
+		}
+	}
+
+	pagesPath := e.Config.PagesPathOrDefault()
+	pages, err := ListDirectory(pagesPath)
+	if err != nil {
+		return err
+	}
+	for _, page := range pages {
+		logger.MaybeSyncInfof(e.Log, "rendering page `%s`", page.Name())
+		pageTemplate, err := e.CompileTemplate(filepath.Join(pagesPath, page.Name()), renderContext.Partials)
+		if err != nil {
+			return err
+		}
+		pageOutputPath := filepath.Join(outputPath, page.Name())
+		if err := e.RenderTemplateToFile(pageTemplate, pageOutputPath, &model.ViewModel{
+			Config: e.Config,
+			Post:   model.Posts(renderContext.Data.Posts).First(),
+			Posts:  renderContext.Data.Posts,
+			Tags:   renderContext.Data.Tags,
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -275,7 +280,7 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 				if err := MakeDir(tagPath); err != nil {
 					return exception.New(err)
 				}
-				if err := e.WriteTemplate(tagTemplate, filepath.Join(tagPath, constants.FileIndex), &model.ViewModel{
+				if err := e.RenderTemplateToFile(tagTemplate, filepath.Join(tagPath, constants.FileIndex), &model.ViewModel{
 					Config: e.Config,
 					Posts:  renderContext.Data.Posts,
 					Tags:   renderContext.Data.Tags,
@@ -341,9 +346,11 @@ func (e Engine) CleanThumbnailCache(dryRun bool) error {
 		return exception.New(err)
 	}
 
+	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
+	logger.MaybeSyncInfof(e.Log, "comparing to `%s` as thumbnail cache", thumbnailCachePath)
+
 	// for each thumbnail cache folder
 	var orphanedCachedPosts []string
-	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
 	err = filepath.Walk(thumbnailCachePath, func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -370,8 +377,11 @@ func (e Engine) CleanThumbnailCache(dryRun bool) error {
 			if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
 				return exception.New(err)
 			}
+			logger.MaybeSyncInfof(e.Log, "purging orphaned cached directory `%s`", path)
+		} else {
+
+			logger.MaybeSyncInfof(e.Log, "(dry-run) would purge orphaned cached directory `%s`", path)
 		}
-		logger.MaybeSyncInfof(e.Log, "purging orphaned cached directory `%s`", path)
 	}
 
 	return nil
@@ -414,7 +424,7 @@ func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*mod
 	}
 
 	var post model.Post
-	var modTime time.Time
+	var postModTime time.Time
 	for _, fi := range files {
 		name := fi.Name()
 		if name == constants.FileMeta {
@@ -423,22 +433,24 @@ func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*mod
 			}
 		} else if HasExtension(name, constants.ImageExtensions...) && post.Image.IsZero() {
 			post.ImagePath = filepath.Join(path, name)
-			if modTime.Before(fi.ModTime()) {
-				modTime = fi.ModTime()
+			if postModTime.Before(fi.ModTime()) {
+				postModTime = fi.ModTime()
 			}
 			if post.Image, err = ReadImage(post.ImagePath); err != nil {
 				return nil, err
 			}
 		} else if HasExtension(name, constants.TemplateExtensions...) && post.TemplatePath == "" {
 			post.TemplatePath = filepath.Join(path, name)
-			if modTime.Before(fi.ModTime()) {
-				modTime = fi.ModTime()
+			if postModTime.Before(fi.ModTime()) {
+				postModTime = fi.ModTime()
 			}
+		} else {
+			logger.MaybeSyncDebugf(e.Log, "ignoring file: %s", name)
 		}
 	}
 	post.Slug = e.CreateSlug(slugTemplate, post)
 	if post.Meta.Posted.IsZero() {
-		post.Meta.Posted = modTime
+		post.Meta.Posted = postModTime
 	}
 	if post.ImagePath == "" && post.TemplatePath == "" {
 		return nil, exception.New("no image or template found").WithMessage(path)
@@ -590,8 +602,8 @@ func (e Engine) CopyThumbnail(etag, destinationPath string, size int) error {
 	return nil
 }
 
-// WriteTemplate writes a template to a given path with a given data viewmodel.
-func (e Engine) WriteTemplate(tpl *template.Template, outputPath string, data *model.ViewModel) error {
+// RenderTemplateToFile writes a template to a given path with a given data viewmodel.
+func (e Engine) RenderTemplateToFile(tpl *template.Template, outputPath string, data *model.ViewModel) error {
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return exception.New(err)
