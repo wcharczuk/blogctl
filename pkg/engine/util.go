@@ -114,9 +114,6 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 		if denominator != 0 {
 			data.FNumber = fmt.Sprintf("F%g", float64(nominator)/float64(denominator))
 		}
-	} else {
-		err = exception.New(tagErr)
-		return
 	}
 
 	if tag, tagErr := exifData.Get(exif.FocalLength); tagErr == nil {
@@ -128,42 +125,23 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 		if denominator != 0 {
 			data.FocalLength = fmt.Sprintf("%gmm", float64(nominator)/float64(denominator))
 		}
-	} else {
-		err = exception.New(tagErr)
-		return
 	}
 
 	if tag, tagErr := exifData.Get(exif.ExposureTime); tagErr == nil {
 		data.ExposureTime = stringutil.StripQuotes(tag.String()) + " sec"
-	} else {
-		err = exception.New(tagErr)
-		return
 	}
-
 	if tag, tagErr := exifData.Get(exif.ISOSpeedRatings); tagErr == nil {
 		data.ISOSpeedRatings = stringutil.StripQuotes(tag.String())
-	} else {
-		err = exception.New(tagErr)
-		return
 	}
-
 	if tag, tagErr := exifData.Get(exif.Make); tagErr == nil {
 		data.CameraMake = stringutil.StripQuotes(tag.String())
-	} else {
-		err = exception.New(tagErr)
-		return
 	}
 	if tag, tagErr := exifData.Get(exif.Model); tagErr == nil {
 		data.CameraModel = stringutil.StripQuotes(tag.String())
-	} else {
-		err = exception.New(tagErr)
-		return
 	}
-
 	if tag, tagErr := exifData.Get(exif.LensMake); tagErr == nil {
 		data.LensMake = tag.String()
 	}
-
 	if tag, tagErr := exifData.Get(exif.LensModel); tagErr == nil {
 		data.LensModel = tag.String()
 	}
