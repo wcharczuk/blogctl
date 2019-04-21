@@ -10,19 +10,23 @@ import (
 )
 
 // Server returns the server command.
-func Server(configPath *string, log logger.Log) *cobra.Command {
+func Server(configPath *string) *cobra.Command {
 	var bindAddr, static *string
 	cmd := &cobra.Command{
 		Use:     "server",
 		Aliases: []string{"s", "server"},
 		Short:   "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
-			config, err := engine.ReadConfig(*configPath)
+			cfg, cfgPath, err := engine.ReadConfig(*configPath)
 			if err != nil {
 				logger.FatalExit(err)
 			}
+			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl")
+			if cfgPath != "" {
+				log.Infof("using config path: %s", cfgPath)
+			}
 
-			files := config.OutputPathOrDefault()
+			files := cfg.OutputPathOrDefault()
 			app := web.New(web.OptBindAddr(*bindAddr), web.OptLog(log))
 			if *static != "" {
 				log.Infof("using static search path: %s", *static)

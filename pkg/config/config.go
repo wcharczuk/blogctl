@@ -1,6 +1,13 @@
 package config
 
-import "github.com/wcharczuk/blogctl/pkg/constants"
+import (
+	"runtime"
+
+	"github.com/blend/go-sdk/configutil"
+
+	"github.com/blend/go-sdk/logger"
+	"github.com/wcharczuk/blogctl/pkg/constants"
+)
 
 // These are set by ldflags.
 var (
@@ -52,17 +59,31 @@ type Config struct {
 	ImageSizes []int `json:"imageSizes,omitempty" yaml:"imageSizes,omitempty"`
 	// Extra is optional and allows you to provide variables for templates.
 	Extra Extra `json:"extra,omitempty" yaml:"extra,omitempty"`
+
+	// module configs
+
 	// S3 governs how the blog is deployed.
 	S3 S3 `json:"s3,omitempty" yaml:"s3,omitempty"`
 	// Cloudfront governs options for how the s3 files are cached.
 	Cloudfront Cloudfront `json:"cloudfront,omitempty" yaml:"cloudfront,omitempty"`
+	// Logger is the config for the logger.
+	Logger logger.Config `json:"logger,omitempty" yaml:"logger,omitempty"`
 
-	// below are knobs you can turn to disable specific things.
+	// below are knobs you can turn tweak specific things.
 
+	// Parallelism lets you set the number of goroutines to use for resource intensive steps.
+	Parallelism int `json:"parallelism" yaml:"parallelism"`
 	// SkipTags instructs the engine to not create tag summary pages.
 	SkipTags bool `json:"skipTags,omitempty" yaml:"skipTags,omitempty"`
 	// SkipJSONData instructs the engine not to create a data.json file.
 	SkipJSONData bool `json:"skipJSONData,omitempty" yaml:"skipJSONData,omitempty"`
+}
+
+// Resolve implements configutil.Resolver.
+func (c *Config) Resolve() error {
+	return configutil.AnyError(
+		c.Logger.Resolve(),
+	)
 }
 
 // Fields returns fields to prompt for when creating a new config.
@@ -185,4 +206,12 @@ func (c Config) ImageSizesOrDefault() []int {
 		return c.ImageSizes
 	}
 	return constants.DefaultImageSizes
+}
+
+// ParallelismOrDefault returns the engine parallelism or a default (typically runtime.NumCPU())
+func (c Config) ParallelismOrDefault() int {
+	if c.Parallelism > 0 {
+		return c.Parallelism
+	}
+	return runtime.NumCPU()
 }

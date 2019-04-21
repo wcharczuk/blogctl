@@ -7,17 +7,22 @@ import (
 )
 
 // Build returns the build command.
-func Build(configPath *string, log logger.Log) *cobra.Command {
+func Build(configPath *string) *cobra.Command {
 	return &cobra.Command{
 		Use:     "build",
 		Short:   "Build the photoblog",
 		Aliases: []string{"b", "build", "g", "generate"},
 		Run: func(cmd *cobra.Command, args []string) {
-			config, err := engine.ReadConfig(*configPath)
+			cfg, cfgPath, err := engine.ReadConfig(*configPath)
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			if err := engine.New(config).WithLogger(log.SubContext("build")).Generate(); err != nil {
+			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl")
+			if cfgPath != "" {
+				log.Infof("using config path: %s", cfgPath)
+			}
+
+			if err := engine.New(cfg).WithLogger(log.SubContext("build")).Generate(); err != nil {
 				logger.FatalExit(err)
 			}
 		},

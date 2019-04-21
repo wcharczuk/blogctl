@@ -17,7 +17,7 @@ import (
 )
 
 // New returns a new post command.
-func New(configPath *string, log logger.Log) *cobra.Command {
+func New(configPath *string) *cobra.Command {
 	var title, location, posted *string
 	var tags *[]string
 	cmd := &cobra.Command{
@@ -27,9 +27,13 @@ func New(configPath *string, log logger.Log) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			imagePath := args[0]
 
-			config, err := engine.ReadConfig(*configPath)
+			cfg, cfgPath, err := engine.ReadConfig(*configPath)
 			if err != nil {
 				logger.FatalExit(err)
+			}
+			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl")
+			if cfgPath != "" {
+				log.Infof("using config path: %s", cfgPath)
 			}
 
 			var postedDate time.Time
@@ -49,7 +53,7 @@ func New(configPath *string, log logger.Log) *cobra.Command {
 				*title = filepath.Base(imagePath)
 			}
 
-			path := fmt.Sprintf("%s/%s-%s", config.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
+			path := fmt.Sprintf("%s/%s-%s", cfg.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
 			log.SubContext("new").Infof("writing new post to %s", path)
 			if err := engine.MakeDir(path); err != nil {
 				log.SubContext("new").Fatal(err)

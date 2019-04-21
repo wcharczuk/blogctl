@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
 
 	"github.com/wcharczuk/blogctl/pkg/cmd"
@@ -30,15 +29,13 @@ func main() {
 	}
 	configPath := blogctl.PersistentFlags().String("config", "./config.yml", "The config file path")
 
-	log := logger.All().SubContext("blogctl")
-
 	// add commands
-	blogctl.AddCommand(cmd.Init(configPath, log))
-	blogctl.AddCommand(cmd.New(configPath, log))
-	blogctl.AddCommand(cmd.Build(configPath, log))
-	blogctl.AddCommand(cmd.Clean(configPath, log))
-	blogctl.AddCommand(cmd.Deploy(configPath, log))
-	blogctl.AddCommand(cmd.Server(configPath, log))
+	blogctl.AddCommand(cmd.Init(configPath))
+	blogctl.AddCommand(cmd.New(configPath))
+	blogctl.AddCommand(cmd.Build(configPath))
+	blogctl.AddCommand(cmd.Clean(configPath))
+	blogctl.AddCommand(cmd.Deploy(configPath))
+	blogctl.AddCommand(cmd.Server(configPath))
 
 	if err := blogctl.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

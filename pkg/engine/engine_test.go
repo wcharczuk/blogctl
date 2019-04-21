@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -30,7 +31,8 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 func TestEngineBuild(t *testing.T) {
 	assert := assert.New(t)
 
-	config, err := ReadConfig("./testdata/config.yml")
+	config, path, err := ReadConfig("./testdata/config.yml")
 	assert.Nil(err)
+	assert.True(strings.HasSuffix(path, "testdata/config.yml"))
 	assert.Nil(New(config).Generate())
 }

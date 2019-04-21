@@ -14,6 +14,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"github.com/blend/go-sdk/configutil"
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/yaml"
 
@@ -24,13 +25,11 @@ import (
 )
 
 // ReadConfig reads a config at a given path as yaml.
-func ReadConfig(configPath string) (config config.Config, err error) {
-	contents, readErr := ioutil.ReadFile(configPath)
-	if readErr != nil {
-		err = ex.New(readErr)
-		return
+func ReadConfig(configPath string) (config config.Config, path string, err error) {
+	path, err = configutil.Read(&config, configutil.OptPaths(configPath))
+	if configutil.IsIgnored(err) {
+		err = nil
 	}
-	err = ex.New(yaml.Unmarshal(contents, &config))
 	return
 }
 

@@ -7,18 +7,23 @@ import (
 )
 
 // Clean returns the clean command.
-func Clean(configPath *string, log logger.Log) *cobra.Command {
+func Clean(configPath *string) *cobra.Command {
 	var dryRun *bool
 	cmd := &cobra.Command{
 		Use:     "clean",
 		Short:   "Clean the thumbnail cache",
 		Aliases: []string{"c"},
 		Run: func(cmd *cobra.Command, args []string) {
-			config, err := engine.ReadConfig(*configPath)
+			cfg, configPath, err := engine.ReadConfig(*configPath)
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			if err := engine.New(config).WithLogger(log.SubContext("clean")).CleanThumbnailCache(*dryRun); err != nil {
+			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl")
+			if configPath != "" {
+				log.Infof("using config path: %s", configPath)
+			}
+
+			if err := engine.New(cfg).WithLogger(log.SubContext("clean")).CleanThumbnailCache(*dryRun); err != nil {
 				logger.FatalExit(err)
 			}
 		},
