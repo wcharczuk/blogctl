@@ -1,3 +1,0 @@
-- contains: "github.com/blend/go-sdk"
-  message: "assert needs to only depend on itself as it's used by every other package"
-  exclude: "assert/_examples/*"

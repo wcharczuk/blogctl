@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 
-	"github.com/blend/go-sdk/exception"
+	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/logger"
 	"github.com/blend/go-sdk/webutil"
 
@@ -30,7 +30,7 @@ func New(cfg *aws.Config) *Manager {
 
 // Manager is a helper for uploading files to s3.
 type Manager struct {
-	Log               logger.FullReceiver
+	Log               logger.Log
 	Config            *aws.Config
 	Session           *session.Session
 	PutObjectDefaults File
@@ -52,7 +52,7 @@ func (m Manager) GetKey(rootPath, workingPath string) string {
 // It returns a list of invalidated keys (i.e. keys to update or remove), and an error.
 func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string) ([]string, error) {
 	if m.DryRun {
-		logger.MaybeSyncDebugf(m.Log, "dry run; not realizing changes")
+		m.Log.Debugf("dry run; not realizing changes")
 	}
 	remoteETags := make(map[string]string)
 	localKeys := make(map[string]bool)
@@ -102,7 +102,7 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 		}
 
 		if !ok || remoteETag != localETag {
-			logger.MaybeSyncInfof(m.Log, "putting %s", key)
+			m.Log.Infof("putting %s", key)
 
 			contentType, err := webutil.DetectContentType(currentPath)
 			if err != nil {
@@ -124,14 +124,14 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 				invalidated = append(invalidated, key)
 			}
 		} else {
-			logger.MaybeSyncInfof(m.Log, "skipping %s (unchanged)", key)
+			m.Log.Infof("skipping %s (unchanged)", key)
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		return nil, exception.New(err)
+		return nil, ex.New(err)
 	}
 
 	for _, remoteFile := range remoteFiles {
@@ -141,7 +141,7 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 		}
 
 		if _, ok := localKeys[key]; !ok {
-			logger.MaybeSyncInfof(m.Log, "removing remote %s", remoteFile.Key)
+			m.Log.Infof("removing remote %s", remoteFile.Key)
 			if !m.DryRun {
 				if err := m.Delete(ctx, bucket, remoteFile.Key); err != nil {
 					return nil, err
@@ -187,7 +187,7 @@ func (m Manager) Get(ctx context.Context, bucket, key string) (file File, conten
 		return
 	}
 	if getErr != nil {
-		err = exception.New(getErr)
+		err = ex.New(getErr)
 		return
 	}
 
@@ -238,7 +238,7 @@ func (m Manager) Put(ctx context.Context, fileInfo File) error {
 		size = int64(len(fileInfo.Contents))
 		contents = bytes.NewReader(fileInfo.Contents)
 	} else {
-		return exception.New("invalid put object").WithMessage("must set either the path or the contents")
+		return ex.New("invalid put object").WithMessage("must set either the path or the contents")
 	}
 
 	if fileInfo.ContentType != "" {
@@ -275,7 +275,7 @@ func (m Manager) Put(ctx context.Context, fileInfo File) error {
 		ACL:                  aws.RefStr(acl),
 		ServerSideEncryption: aws.RefStr(serverSideEncryption),
 	})
-	return exception.New(err)
+	return ex.New(err)
 }
 
 // Delete removes an object with a given key.
@@ -284,20 +284,20 @@ func (m Manager) Delete(ctx context.Context, bucket, key string) error {
 		Bucket: aws.RefStr(bucket),
 		Key:    aws.RefStr(key),
 	})
-	return exception.New(err)
+	return ex.New(err)
 }
 
 // GenerateETag generate an etag for a give file by path.
 func (m Manager) GenerateETag(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return "", exception.New(err)
+		return "", ex.New(err)
 	}
 
 	hash := md5.New()
 	_, err = io.Copy(hash, f)
 	if err != nil {
-		return "", exception.New(err)
+		return "", ex.New(err)
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil

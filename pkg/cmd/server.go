@@ -10,7 +10,7 @@ import (
 )
 
 // Server returns the server command.
-func Server(configPath *string, log *logger.Logger) *cobra.Command {
+func Server(configPath *string, log logger.Log) *cobra.Command {
 	var bindAddr, static *string
 	cmd := &cobra.Command{
 		Use:     "server",
@@ -19,19 +19,18 @@ func Server(configPath *string, log *logger.Logger) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := engine.ReadConfig(*configPath)
 			if err != nil {
-				log.SyncFatalExit(err)
+				logger.FatalExit(err)
 			}
 
 			files := config.OutputPathOrDefault()
-			app := web.New().WithBindAddr(*bindAddr)
-			app.WithLogger(log)
+			app := web.New(web.OptBindAddr(*bindAddr), web.OptLog(log))
 			if *static != "" {
-				log.SyncInfof("using static search path: %s", *static)
-				log.SyncInfof("using static search path: %s", files)
-				app.ServeStatic("/", *static, files)
+				log.Infof("using static search path: %s", *static)
+				log.Infof("using static search path: %s", files)
+				app.ServeStatic("/", []string{*static, files})
 			} else {
-				log.SyncInfof("using static search path: %s", files)
-				app.ServeStatic("/", files)
+				log.Infof("using static search path: %s", files)
+				app.ServeStatic("/", []string{files})
 			}
 
 			app.SetStaticRewriteRule("/", "/$", func(filePath string, matchedPieces ...string) string {
@@ -41,7 +40,7 @@ func Server(configPath *string, log *logger.Logger) *cobra.Command {
 				return filePath
 			})
 			if err := graceful.Shutdown(app); err != nil {
-				log.SyncFatalExit(err)
+				logger.FatalExit(err)
 			}
 		},
 	}

@@ -5,7 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudfront"
-	"github.com/blend/go-sdk/exception"
+	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/uuid"
 
 	"github.com/wcharczuk/blogctl/pkg/aws"
@@ -23,7 +23,7 @@ func InvalidateMany(ctx context.Context, session *session.Session, distribution 
 			},
 		},
 	})
-	return exception.New(err)
+	return ex.New(err)
 }
 
 func quantity(items ...string) *int64 {

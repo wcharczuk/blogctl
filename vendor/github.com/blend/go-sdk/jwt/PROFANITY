@@ -1,6 +1,0 @@
-- id: GOLANG_JWT_GO
-  contains: dgrijalva/jwt-go
-  message: should not reference original library
-- id: GOLANG_JWT_SINGING
-  contains: singing
-  message: should always use "signing" not "singing"

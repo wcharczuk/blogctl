@@ -14,7 +14,7 @@ import (
 )
 
 // Deploy returns the deploy command.
-func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
+func Deploy(configPath *string, log logger.Log) *cobra.Command {
 	var bucket, region *string
 	var dryRun *bool
 	cmd := &cobra.Command{
@@ -25,7 +25,7 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 			deployLog := log.SubContext("deploy")
 			cfg, err := engine.ReadConfig(*configPath)
 			if err != nil {
-				deployLog.SyncFatal(err)
+				deployLog.Fatal(err)
 				os.Exit(1)
 			}
 
@@ -33,7 +33,7 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 				*bucket = cfg.S3.Bucket
 			}
 			if *bucket == "" {
-				deployLog.SyncFatalf("s3 bucket not set in config or in flags, cannot continue (set at `s3 > bucket` in the config or use --bucket)")
+				deployLog.Fatalf("s3 bucket not set in config or in flags, cannot continue (set at `s3 > bucket` in the config or use --bucket)")
 				os.Exit(1)
 			}
 
@@ -41,7 +41,7 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 				*region = cfg.S3.Region
 			}
 			if *region == "" {
-				deployLog.SyncFatalf("s3 region not set in config or in flags, cannot continue (set at `s3 > region` in the config or use --region)")
+				deployLog.Fatalf("s3 region not set in config or in flags, cannot continue (set at `s3 > region` in the config or use --region)")
 				os.Exit(1)
 			}
 
@@ -56,19 +56,19 @@ func Deploy(configPath *string, log *logger.Logger) *cobra.Command {
 			paths, err := mgr.SyncDirectory(context.Background(), cfg.OutputPathOrDefault(), *bucket)
 
 			if err != nil {
-				deployLog.SyncFatal(err)
+				deployLog.Fatal(err)
 			}
 
 			if !mgr.DryRun {
 				if !cfg.Cloudfront.IsZero() && len(paths) > 0 {
-					deployLog.SyncInfof("cloudfront invalidating %d paths", len(paths))
+					deployLog.Infof("cloudfront invalidating %d paths", len(paths))
 					if err := cloudfront.InvalidateMany(context.Background(), mgr.Session, cfg.Cloudfront.Distribution, paths...); err != nil {
-						deployLog.SyncFatal(err)
+						deployLog.Fatal(err)
 						os.Exit(1)
 					}
 				}
 			} else {
-				deployLog.SyncDebugf("dry run; would invalidate %d files", len(paths))
+				deployLog.Debugf("dry run; would invalidate %d files", len(paths))
 			}
 		},
 	}

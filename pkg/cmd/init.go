@@ -15,7 +15,7 @@ import (
 )
 
 // Init returns the init command.
-func Init(configPath *string, log *logger.Logger) *cobra.Command {
+func Init(configPath *string, log logger.Log) *cobra.Command {
 	return &cobra.Command{
 		Use:   "init [NAME]",
 		Short: "Initialize a new blog",

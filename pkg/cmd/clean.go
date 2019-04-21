@@ -7,7 +7,7 @@ import (
 )
 
 // Clean returns the clean command.
-func Clean(configPath *string, log *logger.Logger) *cobra.Command {
+func Clean(configPath *string, log logger.Log) *cobra.Command {
 	var dryRun *bool
 	cmd := &cobra.Command{
 		Use:     "clean",
@@ -16,10 +16,10 @@ func Clean(configPath *string, log *logger.Logger) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := engine.ReadConfig(*configPath)
 			if err != nil {
-				log.SyncFatalExit(err)
+				logger.FatalExit(err)
 			}
 			if err := engine.New(config).WithLogger(log.SubContext("clean")).CleanThumbnailCache(*dryRun); err != nil {
-				log.SyncFatalExit(err)
+				logger.FatalExit(err)
 			}
 		},
 	}

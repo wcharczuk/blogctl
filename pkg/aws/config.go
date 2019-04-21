@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"github.com/blend/go-sdk/configutil"
 	"github.com/blend/go-sdk/env"
 )
 
@@ -34,20 +33,8 @@ func (a Config) IsZero() bool {
 
 // GetRegion gets a property or a default.
 func (a Config) GetRegion(defaults ...string) string {
-	return configutil.CoalesceString(a.Region, DefaultAWSRegion, defaults...)
-}
-
-// GetAccessKeyID gets a property or a default.
-func (a Config) GetAccessKeyID(defaults ...string) string {
-	return configutil.CoalesceString(a.AccessKeyID, "", defaults...)
-}
-
-// GetSecretAccessKey gets a property or a default.
-func (a Config) GetSecretAccessKey(defaults ...string) string {
-	return configutil.CoalesceString(a.SecretAccessKey, "", defaults...)
-}
-
-// GetToken returns a secret access token or a default.
-func (a Config) GetToken(defaults ...string) string {
-	return configutil.CoalesceString(a.SecurityToken, "", defaults...)
+	if a.Region != "" {
+		return a.Region
+	}
+	return DefaultAWSRegion
 }

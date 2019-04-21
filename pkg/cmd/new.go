@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/blend/go-sdk/exception"
+	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
 
@@ -17,7 +17,7 @@ import (
 )
 
 // New returns a new post command.
-func New(configPath *string, log *logger.Logger) *cobra.Command {
+func New(configPath *string, log logger.Log) *cobra.Command {
 	var title, location, posted *string
 	var tags *[]string
 	cmd := &cobra.Command{
@@ -29,19 +29,19 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 
 			config, err := engine.ReadConfig(*configPath)
 			if err != nil {
-				log.SyncFatalExit(err)
+				logger.FatalExit(err)
 			}
 
 			var postedDate time.Time
 			if *posted != "" {
 				postedDate, err = time.Parse("2006-01-02", *posted)
 				if err != nil {
-					log.SyncFatalExit(exception.New(err))
+					logger.FatalExit(ex.New(err))
 				}
 			} else {
 				postedDate, err = engine.ExtractCaptureDate(imagePath)
 				if err != nil {
-					log.SyncFatalExit(err)
+					logger.FatalExit(err)
 				}
 			}
 
@@ -52,11 +52,11 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 			path := fmt.Sprintf("%s/%s-%s", config.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
 			log.SubContext("new").Infof("writing new post to %s", path)
 			if err := engine.MakeDir(path); err != nil {
-				log.SubContext("new").SyncFatal(err)
+				log.SubContext("new").Fatal(err)
 				os.Exit(1)
 			}
 			if err := engine.Copy(imagePath, filepath.Join(path, filepath.Base(imagePath))); err != nil {
-				log.SubContext("new").SyncFatal(err)
+				log.SubContext("new").Fatal(err)
 				os.Exit(1)
 			}
 
@@ -71,7 +71,7 @@ func New(configPath *string, log *logger.Logger) *cobra.Command {
 				Tags:     metaTags,
 			}
 			if err := engine.WriteYAML(filepath.Join(path, constants.FileMeta), meta); err != nil {
-				log.SubContext("new").SyncFatal(err)
+				log.SubContext("new").Fatal(err)
 				os.Exit(1)
 			}
 		},

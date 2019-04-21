@@ -14,7 +14,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/blend/go-sdk/exception"
+	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/yaml"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
@@ -27,16 +27,16 @@ import (
 func ReadConfig(configPath string) (config config.Config, err error) {
 	contents, readErr := ioutil.ReadFile(configPath)
 	if readErr != nil {
-		err = exception.New(readErr)
+		err = ex.New(readErr)
 		return
 	}
-	err = exception.New(yaml.Unmarshal(contents, &config))
+	err = ex.New(yaml.Unmarshal(contents, &config))
 	return
 }
 
 // ListDirectory returns all the file infos within a given directory by path.
 func ListDirectory(path string) (files []os.FileInfo, err error) {
-	err = exception.New(filepath.Walk(path, func(currentPath string, info os.FileInfo, err error) error {
+	err = ex.New(filepath.Walk(path, func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 	if tag, tagErr := exifData.Get(exif.FNumber); tagErr == nil {
 		nominator, denominator, ratErr := tag.Rat2(0)
 		if ratErr != nil {
-			err = exception.New(ratErr)
+			err = ex.New(ratErr)
 			return
 		}
 
@@ -119,7 +119,7 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 	if tag, tagErr := exifData.Get(exif.FocalLength); tagErr == nil {
 		nominator, denominator, ratErr := tag.Rat2(0)
 		if ratErr != nil {
-			err = exception.New(ratErr)
+			err = ex.New(ratErr)
 			return
 		}
 		if denominator != 0 {
@@ -152,12 +152,12 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 func GenerateExifData(imagePath string) (*exif.Exif, error) {
 	contents, err := ioutil.ReadFile(imagePath)
 	if err != nil {
-		return nil, exception.New(err)
+		return nil, ex.New(err)
 	}
 
 	rawExifData, err := exif.Decode(bytes.NewBuffer(contents))
 	if err != nil {
-		return nil, exception.New(err)
+		return nil, ex.New(err)
 	}
 
 	return rawExifData, nil
@@ -176,12 +176,12 @@ func ExtractCaptureDate(imagePath string) (captureDate time.Time, err error) {
 
 // MakeDir creates a new directory.
 func MakeDir(path string) error {
-	return exception.New(os.MkdirAll(path, 0755))
+	return ex.New(os.MkdirAll(path, 0755))
 }
 
 // WriteFile writes a file with default perms.
 func WriteFile(path string, contents []byte) error {
-	return exception.New(ioutil.WriteFile(path, contents, 0666))
+	return ex.New(ioutil.WriteFile(path, contents, 0666))
 }
 
 // WriteYAML writes an object as yaml to disk.
@@ -190,7 +190,7 @@ func WriteYAML(path string, obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	return exception.New(ioutil.WriteFile(path, contents, 0666))
+	return ex.New(ioutil.WriteFile(path, contents, 0666))
 }
 
 // Exists returns if a given file exists.

@@ -6,16 +6,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/blend/go-sdk/exception"
+	"github.com/blend/go-sdk/ex"
 )
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file
 func Copy(src, dest string) error {
 	info, err := os.Lstat(src)
 	if err != nil {
-		return exception.New(err)
+		return ex.New(err)
 	}
-	return exception.New(copy(src, dest, info))
+	return ex.New(copy(src, dest, info))
 }
 
 // copy dispatches copy-funcs according to the mode.
@@ -36,27 +36,27 @@ func copy(src, dest string, info os.FileInfo) error {
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo) error {
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
-		return exception.New(err)
+		return ex.New(err)
 	}
 
 	f, err := os.Create(dest)
 	if err != nil {
-		return exception.New(err)
+		return ex.New(err)
 	}
 	defer f.Close()
 
 	if err = os.Chmod(f.Name(), info.Mode()); err != nil {
-		return exception.New(err)
+		return ex.New(err)
 	}
 
 	s, err := os.Open(src)
 	if err != nil {
-		return exception.New(err)
+		return ex.New(err)
 	}
 	defer s.Close()
 
 	_, err = io.Copy(f, s)
-	return exception.New(err)
+	return ex.New(err)
 }
 
 // dcopy is for a directory,
@@ -64,19 +64,19 @@ func fcopy(src, dest string, info os.FileInfo) error {
 // and pass everything to "copy" recursively.
 func dcopy(srcdir, destdir string, info os.FileInfo) error {
 	if err := os.MkdirAll(destdir, info.Mode()); err != nil {
-		return exception.New(err)
+		return ex.New(err)
 	}
 
 	contents, err := ioutil.ReadDir(srcdir)
 	if err != nil {
-		return exception.New(err)
+		return ex.New(err)
 	}
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
 		if err := copy(cs, cd, content); err != nil {
 			// If any error, exit immediately
-			return exception.New(err)
+			return ex.New(err)
 		}
 	}
 	return nil
@@ -87,7 +87,7 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 func lcopy(src, dest string, info os.FileInfo) error {
 	src, err := os.Readlink(src)
 	if err != nil {
-		return exception.New(err)
+		return ex.New(err)
 	}
-	return exception.New(os.Symlink(src, dest))
+	return ex.New(os.Symlink(src, dest))
 }

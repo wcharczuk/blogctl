@@ -7,7 +7,7 @@ import (
 )
 
 // Build returns the build command.
-func Build(configPath *string, log *logger.Logger) *cobra.Command {
+func Build(configPath *string, log logger.Log) *cobra.Command {
 	return &cobra.Command{
 		Use:     "build",
 		Short:   "Build the photoblog",
@@ -15,10 +15,10 @@ func Build(configPath *string, log *logger.Logger) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := engine.ReadConfig(*configPath)
 			if err != nil {
-				log.SyncFatalExit(err)
+				logger.FatalExit(err)
 			}
 			if err := engine.New(config).WithLogger(log.SubContext("build")).Generate(); err != nil {
-				log.SyncFatalExit(err)
+				logger.FatalExit(err)
 			}
 		},
 	}

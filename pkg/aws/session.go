@@ -18,7 +18,7 @@ func NewSession(cfg *Config) *session.Session {
 
 	awsConfig := &aws.Config{
 		Region:      RefStr(cfg.GetRegion()),
-		Credentials: credentials.NewStaticCredentials(cfg.GetAccessKeyID(), cfg.GetSecretAccessKey(), cfg.GetToken()),
+		Credentials: credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.SecretAccessKey, cfg.SecurityToken),
 	}
 	return session.Must(session.NewSession(awsConfig))
 }
