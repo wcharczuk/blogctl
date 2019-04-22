@@ -5,6 +5,8 @@ import (
 	"github.com/wcharczuk/blogctl/pkg/config"
 )
 
+// banner is the banner displayed at the beginning of most commands.
+// it is generated here: http://patorjk.com/software/taag/#p=display&h=3&f=Slant&t=BLOGCTL
 const banner = `    ____  __   ____  ____________________
    / __ )/ /  / __ \/ ____/ ____/_  __/ /
   / __  / /  / / / / / __/ /     / / / /
