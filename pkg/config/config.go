@@ -3,7 +3,7 @@ package config
 import (
 	"runtime"
 
-	"github.com/blend/go-sdk/configutil"
+	"github.com/blend/go-sdk/web"
 
 	"github.com/blend/go-sdk/logger"
 	"github.com/wcharczuk/blogctl/pkg/constants"
@@ -68,6 +68,8 @@ type Config struct {
 	Cloudfront Cloudfront `json:"cloudfront,omitempty" yaml:"cloudfront,omitempty"`
 	// Logger is the config for the logger.
 	Logger logger.Config `json:"logger,omitempty" yaml:"logger,omitempty"`
+	// Web is the config for the web server.
+	Web web.Config `json:"web,omitempty" yaml:"web,omitempty"`
 
 	// below are knobs you can turn tweak specific things.
 
@@ -77,13 +79,6 @@ type Config struct {
 	SkipTags bool `json:"skipTags,omitempty" yaml:"skipTags,omitempty"`
 	// SkipJSONData instructs the engine not to create a data.json file.
 	SkipJSONData bool `json:"skipJSONData,omitempty" yaml:"skipJSONData,omitempty"`
-}
-
-// Resolve implements configutil.Resolver.
-func (c *Config) Resolve() error {
-	return configutil.AnyError(
-		c.Logger.Resolve(),
-	)
 }
 
 // Fields returns fields to prompt for when creating a new config.

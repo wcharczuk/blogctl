@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
+	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"
 
 	"github.com/blend/go-sdk/graceful"
@@ -10,28 +13,29 @@ import (
 )
 
 // Server returns the server command.
-func Server(configPath *string) *cobra.Command {
-	var bindAddr, static *string
+func Server(flags *config.PersistentFlags) *cobra.Command {
+	var bindAddr *string
+	var statics *[]string
 	cmd := &cobra.Command{
 		Use:     "server",
 		Aliases: []string{"s", "server"},
 		Short:   "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, cfgPath, err := engine.ReadConfig(*configPath)
+			cfg, cfgPath, err := engine.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl")
+			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl").SubContext("server")
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}
 
 			files := cfg.OutputPathOrDefault()
-			app := web.New(web.OptBindAddr(*bindAddr), web.OptLog(log))
-			if *static != "" {
-				log.Infof("using static search path: %s", *static)
-				log.Infof("using static search path: %s", files)
-				app.ServeStatic("/", []string{*static, files})
+			app := web.New(web.OptConfig(cfg.Web), web.OptBindAddr(*bindAddr), web.OptLog(log))
+			if len(*statics) > 0 {
+				filePaths := append(*statics, files)
+				log.Infof("using static search paths: %s", strings.Join(filePaths, ", "))
+				app.ServeStatic("/", filePaths)
 			} else {
 				log.Infof("using static search path: %s", files)
 				app.ServeStatic("/", []string{files})
@@ -49,6 +53,6 @@ func Server(configPath *string) *cobra.Command {
 		},
 	}
 	bindAddr = cmd.Flags().String("bind-addr", ":9000", "The bind address for the static webserver.")
-	static = cmd.Flags().String("static", "", "An alternate static directory to serve from.")
+	statics = cmd.Flags().StringArray("static", nil, "Alternate static directories to serve from.")
 	return cmd
 }

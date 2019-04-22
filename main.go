@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/wcharczuk/blogctl/pkg/cmd"
+	"github.com/wcharczuk/blogctl/pkg/config"
 )
 
 /*
@@ -27,15 +28,16 @@ func main() {
 	blogctl := &cobra.Command{
 		Use: "blogctl",
 	}
-	configPath := blogctl.PersistentFlags().String("config", "./config.yml", "The config file path")
+
+	flags := config.NewFlags(blogctl)
 
 	// add commands
-	blogctl.AddCommand(cmd.Init(configPath))
-	blogctl.AddCommand(cmd.New(configPath))
-	blogctl.AddCommand(cmd.Build(configPath))
-	blogctl.AddCommand(cmd.Clean(configPath))
-	blogctl.AddCommand(cmd.Deploy(configPath))
-	blogctl.AddCommand(cmd.Server(configPath))
+	blogctl.AddCommand(cmd.Init(flags))
+	blogctl.AddCommand(cmd.New(flags))
+	blogctl.AddCommand(cmd.Build(flags))
+	blogctl.AddCommand(cmd.Clean(flags))
+	blogctl.AddCommand(cmd.Deploy(flags))
+	blogctl.AddCommand(cmd.Server(flags))
 
 	if err := blogctl.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

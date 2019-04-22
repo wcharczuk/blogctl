@@ -103,18 +103,18 @@ func (e Engine) DiscoverPosts() (*model.Data, error) {
 		BaseURL: e.Config.BaseURLOrDefault(),
 	}
 	tags := make(map[string]*model.Tag)
-	imagesPath := e.Config.PostsPathOrDefault()
+	postsPath := e.Config.PostsPathOrDefault()
 
-	logger.MaybeInfof(e.Log, "searching `%s` for images as posts", imagesPath)
-	err = filepath.Walk(imagesPath, func(currentPath string, info os.FileInfo, err error) error {
+	logger.MaybeInfof(e.Log, "searching `%s` for posts", postsPath)
+	err = filepath.Walk(postsPath, func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if currentPath == imagesPath {
+		if currentPath == postsPath {
 			return nil
 		}
 		if info.IsDir() {
-			logger.MaybeInfof(e.Log, "reading post `%s`", currentPath)
+			logger.MaybeDebugf(e.Log, "reading post `%s`", currentPath)
 
 			// check if we have an image
 			post, err := e.GeneratePost(slugTemplate, currentPath)
@@ -219,7 +219,7 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 
 		var postTemplate *template.Template
 		if post.TemplatePath != "" {
-			logger.MaybeInfof(e.Log, "using custom template for post `%s` (%s)", post.TitleOrDefault(), post.TemplatePath)
+			logger.MaybeDebugf(e.Log, "using custom template for post `%s` (%s)", post.TitleOrDefault(), post.TemplatePath)
 			if post.Template, err = e.CompileTemplate(post.TemplatePath, renderContext.Partials); err != nil {
 				return ex.New(err)
 			}

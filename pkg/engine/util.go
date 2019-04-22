@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	_ "image/png"
 
 	"github.com/blend/go-sdk/configutil"
+	"github.com/blend/go-sdk/env"
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/yaml"
 
@@ -25,8 +27,15 @@ import (
 )
 
 // ReadConfig reads a config at a given path as yaml.
-func ReadConfig(configPath string) (config config.Config, path string, err error) {
-	path, err = configutil.Read(&config, configutil.OptPaths(configPath))
+func ReadConfig(flags *config.PersistentFlags) (cfg config.Config, path string, err error) {
+	path, err = configutil.Read(&cfg, configutil.OptPaths(*flags.ConfigPath), configutil.OptResolver(func(untyped interface{}) error {
+		c := untyped.(*config.Config)
+		return configutil.AnyError(
+			env.Env().ReadInto(c),
+			configutil.SetInt(&c.Parallelism, configutil.Int(*flags.Parallelism), configutil.Int(c.Parallelism), configutil.Int(runtime.NumCPU())),
+			configutil.SetStrings(&c.Logger.Flags, configutil.Strings(*flags.LoggerFlags), configutil.Strings(c.Logger.Flags)),
+		)
+	}))
 	if configutil.IsIgnored(err) {
 		err = nil
 	}

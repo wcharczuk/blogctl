@@ -10,6 +10,7 @@ import (
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
 
+	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/constants"
 	"github.com/wcharczuk/blogctl/pkg/engine"
 	"github.com/wcharczuk/blogctl/pkg/model"
@@ -17,7 +18,7 @@ import (
 )
 
 // New returns a new post command.
-func New(configPath *string) *cobra.Command {
+func New(flags *config.PersistentFlags) *cobra.Command {
 	var title, location, posted *string
 	var tags *[]string
 	cmd := &cobra.Command{
@@ -27,11 +28,11 @@ func New(configPath *string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			imagePath := args[0]
 
-			cfg, cfgPath, err := engine.ReadConfig(*configPath)
+			cfg, cfgPath, err := engine.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl")
+			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl").SubContext("new")
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}
@@ -54,13 +55,13 @@ func New(configPath *string) *cobra.Command {
 			}
 
 			path := fmt.Sprintf("%s/%s-%s", cfg.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
-			log.SubContext("new").Infof("writing new post to %s", path)
+			log.Infof("writing new post to %s", path)
 			if err := engine.MakeDir(path); err != nil {
-				log.SubContext("new").Fatal(err)
+				log.Fatal(err)
 				os.Exit(1)
 			}
 			if err := engine.Copy(imagePath, filepath.Join(path, filepath.Base(imagePath))); err != nil {
-				log.SubContext("new").Fatal(err)
+				log.Fatal(err)
 				os.Exit(1)
 			}
 
@@ -75,7 +76,7 @@ func New(configPath *string) *cobra.Command {
 				Tags:     metaTags,
 			}
 			if err := engine.WriteYAML(filepath.Join(path, constants.FileMeta), meta); err != nil {
-				log.SubContext("new").Fatal(err)
+				log.Fatal(err)
 				os.Exit(1)
 			}
 		},

@@ -10,11 +10,12 @@ import (
 	"github.com/wcharczuk/blogctl/pkg/aws"
 	"github.com/wcharczuk/blogctl/pkg/aws/cloudfront"
 	"github.com/wcharczuk/blogctl/pkg/aws/s3"
+	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"
 )
 
 // Deploy returns the deploy command.
-func Deploy(configPath *string) *cobra.Command {
+func Deploy(flags *config.PersistentFlags) *cobra.Command {
 	var bucket, region *string
 	var dryRun *bool
 	cmd := &cobra.Command{
@@ -22,11 +23,11 @@ func Deploy(configPath *string) *cobra.Command {
 		Aliases: []string{"d", "deploy"},
 		Short:   "Deploy the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, cfgPath, err := engine.ReadConfig(*configPath)
+			cfg, cfgPath, err := engine.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl")
+			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl").SubContext("deploy")
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}
@@ -73,6 +74,7 @@ func Deploy(configPath *string) *cobra.Command {
 			} else {
 				log.Debugf("dry run; would invalidate %d files", len(paths))
 			}
+			log.Info("complete")
 		},
 	}
 

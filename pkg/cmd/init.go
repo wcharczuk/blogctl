@@ -14,7 +14,7 @@ import (
 )
 
 // Init returns the init command.
-func Init(configPath *string) *cobra.Command {
+func Init(flags *config.PersistentFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "init [NAME]",
 		Short: "Initialize a new blog",
@@ -64,7 +64,7 @@ func Init(configPath *string) *cobra.Command {
 			if err := engine.MakeDir(filepath.Join(name, config.StaticsPathOrDefault(), "css")); err != nil {
 				sh.Fatal(err)
 			}
-			if err := engine.WriteYAML(filepath.Join(name, *configPath), config); err != nil {
+			if err := engine.WriteYAML(filepath.Join(name, *flags.ConfigPath), config); err != nil {
 				sh.Fatal(err)
 			}
 

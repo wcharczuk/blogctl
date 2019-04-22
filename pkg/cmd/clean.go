@@ -3,29 +3,31 @@ package cmd
 import (
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
+	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"
 )
 
 // Clean returns the clean command.
-func Clean(configPath *string) *cobra.Command {
+func Clean(flags *config.PersistentFlags) *cobra.Command {
 	var dryRun *bool
 	cmd := &cobra.Command{
 		Use:     "clean",
 		Short:   "Clean the thumbnail cache",
 		Aliases: []string{"c"},
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, configPath, err := engine.ReadConfig(*configPath)
+			cfg, configPath, err := engine.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl")
+			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl").SubContext("clean")
 			if configPath != "" {
 				log.Infof("using config path: %s", configPath)
 			}
 
-			if err := engine.New(cfg).WithLogger(log.SubContext("clean")).CleanThumbnailCache(*dryRun); err != nil {
+			if err := engine.New(cfg).WithLogger(log).CleanThumbnailCache(*dryRun); err != nil {
 				logger.FatalExit(err)
 			}
+			log.Info("complete")
 		},
 	}
 

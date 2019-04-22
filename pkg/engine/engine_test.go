@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/blend/go-sdk/assert"
+	"github.com/blend/go-sdk/ref"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/model"
@@ -31,7 +32,7 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 func TestEngineBuild(t *testing.T) {
 	assert := assert.New(t)
 
-	config, path, err := ReadConfig("./testdata/config.yml")
+	config, path, err := ReadConfig(&config.PersistentFlags{ConfigPath: ref.String("./testdata/config.yml")})
 	assert.Nil(err)
 	assert.True(strings.HasSuffix(path, "testdata/config.yml"))
 	assert.Nil(New(config).Generate())
