@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/blend/go-sdk/logger"
@@ -27,7 +28,8 @@ func Deploy(flags *config.PersistentFlags) *cobra.Command {
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl").SubContext("deploy")
+			log := Logger(cfg, "deploy")
+			fmt.Fprintf(log.Logger.Output, banner)
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}

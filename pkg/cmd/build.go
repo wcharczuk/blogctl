@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
 	"github.com/wcharczuk/blogctl/pkg/config"
@@ -18,13 +21,13 @@ func Build(flags *config.PersistentFlags) *cobra.Command {
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl").SubContext("build")
-
+			log := Logger(cfg, "build")
+			fmt.Fprintf(log.Logger.Output, banner)
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}
 
-			if err := engine.New(cfg).WithLogger(log).Generate(); err != nil {
+			if err := engine.New(cfg).WithLogger(log).Generate(context.Background()); err != nil {
 				logger.FatalExit(err)
 			}
 			log.Info("complete")

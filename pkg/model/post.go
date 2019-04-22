@@ -27,6 +27,11 @@ func (p Post) IsZero() bool {
 	return p.ImagePath == "" && p.TemplatePath == ""
 }
 
+// IsImage returns if the post is an image post.
+func (p Post) IsImage() bool {
+	return p.ImagePath != ""
+}
+
 // HasPrevious returns if there is a previous post.
 func (p Post) HasPrevious() bool {
 	return p.Previous != nil && !p.Previous.IsZero()

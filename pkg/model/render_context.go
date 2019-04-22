@@ -4,4 +4,5 @@ package model
 type RenderContext struct {
 	Data     *Data    `json:"data"`
 	Partials []string `json:"partials"`
+	Stats    Stats    `json:"stats"`
 }

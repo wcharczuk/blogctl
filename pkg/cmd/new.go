@@ -32,7 +32,8 @@ func New(flags *config.PersistentFlags) *cobra.Command {
 			if err != nil {
 				logger.FatalExit(err)
 			}
-			log := logger.MustNew(logger.OptConfig(cfg.Logger)).SubContext("blogctl").SubContext("new")
+			log := Logger(cfg, "new")
+			fmt.Fprintf(log.Logger.Output, banner)
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}

@@ -25,8 +25,9 @@ func Init(flags *config.PersistentFlags) *cobra.Command {
 				sh.Fatalf("must provide a folder name")
 			}
 
+			fmt.Printf(banner)
 			fmt.Println("Initializing a new blog")
-			fmt.Println("Please provide the fields fo the `config.yml`")
+			fmt.Println("Please provide the fields for the `config.yml`")
 			fmt.Println("They will be prompted as `Field (explanation) [default value]`")
 
 			// create a new config

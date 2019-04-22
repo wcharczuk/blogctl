@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -35,5 +36,5 @@ func TestEngineBuild(t *testing.T) {
 	config, path, err := ReadConfig(&config.PersistentFlags{ConfigPath: ref.String("./testdata/config.yml")})
 	assert.Nil(err)
 	assert.True(strings.HasSuffix(path, "testdata/config.yml"))
-	assert.Nil(New(config).Generate())
+	assert.Nil(New(config).Generate(context.TODO()))
 }

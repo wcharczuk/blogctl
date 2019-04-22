@@ -14,6 +14,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/blend/go-sdk/ansi"
+
 	"github.com/blend/go-sdk/async"
 
 	"github.com/blend/go-sdk/ex"
@@ -51,7 +53,7 @@ func (e *Engine) WithLogger(log logger.Log) *Engine {
 }
 
 // Generate generates the blog to the given output directory.
-func (e Engine) Generate() error {
+func (e Engine) Generate(ctx context.Context) error {
 	if err := e.InitializeOutputPath(); err != nil {
 		return err
 	}
@@ -60,14 +62,18 @@ func (e Engine) Generate() error {
 		return err
 	}
 
-	renderContext, err := e.BuildRenderContext()
+	renderContext, err := e.BuildRenderContext(ctx)
 	if err != nil {
 		return err
 	}
 
-	if err := e.Render(renderContext); err != nil {
+	ctx = WithRenderContext(ctx, renderContext)
+	if err := e.Render(ctx); err != nil {
 		return err
 	}
+
+	columns, rows := renderContext.Stats.TableData()
+	ansi.Table(os.Stdout, columns, rows)
 
 	return nil
 }
@@ -91,7 +97,7 @@ func (e Engine) InitializeThumbnailCache() error {
 }
 
 // DiscoverPosts generates the blog data.
-func (e Engine) DiscoverPosts() (*model.Data, error) {
+func (e Engine) DiscoverPosts(ctx context.Context) (*model.Data, error) {
 	slugTemplate, err := e.ParseSlugTemplate()
 	if err != nil {
 		return nil, err
@@ -117,7 +123,7 @@ func (e Engine) DiscoverPosts() (*model.Data, error) {
 			logger.MaybeDebugf(e.Log, "reading post `%s`", currentPath)
 
 			// check if we have an image
-			post, err := e.GeneratePost(slugTemplate, currentPath)
+			post, err := e.GeneratePost(ctx, slugTemplate, currentPath)
 			if err != nil {
 				return err
 			}
@@ -169,23 +175,33 @@ func (e Engine) DiscoverPosts() (*model.Data, error) {
 }
 
 // BuildRenderContext builds the render context used by the render function.
-func (e Engine) BuildRenderContext() (*model.RenderContext, error) {
-	partials, err := e.DiscoverPartials()
+func (e Engine) BuildRenderContext(ctx context.Context) (*model.RenderContext, error) {
+	partials, err := e.DiscoverPartials(ctx)
 	if err != nil {
 		return nil, err
 	}
-	data, err := e.DiscoverPosts()
+	data, err := e.DiscoverPosts(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &model.RenderContext{
 		Data:     data,
 		Partials: partials,
+		Stats: model.Stats{
+			NumPosts:      data.NumPosts(),
+			NumTags:       data.NumTags(),
+			NumImagePosts: data.NumImagePosts(),
+			NumTextPosts:  data.NumTextPosts(),
+			Earliest:      data.EarliestPost(),
+			Latest:        data.LatestPost(),
+		},
 	}, nil
 }
 
 // Render writes the templates out for each of the posts.
-func (e Engine) Render(renderContext *model.RenderContext) error {
+func (e Engine) Render(ctx context.Context) error {
+	renderContext := GetRenderContext(ctx)
+
 	logger.MaybeInfof(e.Log, "rendering posts with parallelism %d", e.Config.ParallelismOrDefault())
 	var err error
 
@@ -248,12 +264,12 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 		}
 
 		if post.ImagePath != "" {
-			if err := e.ProcessThumbnails(post.ImagePath, slugPath); err != nil {
+			if err := e.ProcessThumbnails(ctx, post.ImagePath, slugPath); err != nil {
 				return err
 			}
 		}
 		return nil
-	}, posts, async.OptBatchParallelism(e.Config.ParallelismOrDefault()), async.OptBatchErrors(batchErrors)).Process(context.Background())
+	}, posts, async.OptBatchParallelism(e.Config.ParallelismOrDefault()), async.OptBatchErrors(batchErrors)).Process(ctx)
 
 	if len(batchErrors) > 0 {
 		return <-batchErrors
@@ -320,7 +336,7 @@ func (e Engine) Render(renderContext *model.RenderContext) error {
 }
 
 // CleanThumbnailCache cleans the thumbnail cache by purging cached thumbnails for posts that may have been deleted.
-func (e Engine) CleanThumbnailCache(dryRun bool) error {
+func (e Engine) CleanThumbnailCache(ctx context.Context, dryRun bool) error {
 	// for each post, generate the sha of the image ...
 	postsPath := e.Config.PostsPathOrDefault()
 	logger.MaybeInfof(e.Log, "searching `%s` for posts", postsPath)
@@ -405,7 +421,7 @@ func (e Engine) CleanThumbnailCache(dryRun bool) error {
 
 // DiscoverPartials reads all the partials named in the config.
 // These are then injected into any subsequent renders as potential helper views.
-func (e Engine) DiscoverPartials() ([]string, error) {
+func (e Engine) DiscoverPartials(ctx context.Context) ([]string, error) {
 	partialsPath := e.Config.PartialsPathOrDefault()
 
 	partialFiles, err := ListDirectory(partialsPath)
@@ -425,7 +441,7 @@ func (e Engine) DiscoverPartials() ([]string, error) {
 }
 
 // GeneratePost reads post contents and metadata from a folder.
-func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*model.Post, error) {
+func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Template, path string) (*model.Post, error) {
 	files, err := ListDirectory(path)
 	if err != nil {
 		return nil, err
@@ -471,7 +487,7 @@ func (e Engine) GeneratePost(slugTemplate *template.Template, path string) (*mod
 }
 
 // ProcessThumbnails processes thumbnails.
-func (e Engine) ProcessThumbnails(originalFilePath, destinationPath string) error {
+func (e Engine) ProcessThumbnails(ctx context.Context, originalFilePath, destinationPath string) error {
 	originalContents, err := ioutil.ReadFile(originalFilePath)
 	if err != nil {
 		return ex.New(err)
@@ -528,8 +544,8 @@ func (e Engine) WriteDataJSON(data *model.Data, path string) error {
 }
 
 // GenerateThumbnails generates and copies our main thumbnails for the post image.
-// - originalFilePath should be the path to the original image file
-// - destinationPath should be the path to the output slug folder
+// - originalContents should be the bytes of the original image file
+// - etag should be the sha sum as an etag, it is used as a path component in the file cache
 func (e Engine) GenerateThumbnails(originalContents []byte, etag string) error {
 	// decode jpeg into image.Image
 	original, err := jpeg.Decode(bytes.NewBuffer(originalContents))
