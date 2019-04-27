@@ -33,6 +33,7 @@ func New(flags *config.PersistentFlags) *cobra.Command {
 				logger.FatalExit(err)
 			}
 			log := Logger(cfg, "new")
+
 			fmt.Fprintf(log.Logger.Output, banner)
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)

@@ -63,7 +63,12 @@ func (sc Context) WithFields(fields Fields, options ...ContextOption) Context {
 
 // Trigger triggers an event in the subcontext.
 func (sc Context) Trigger(ctx context.Context, event Event) {
-	sc.Logger.Trigger(WithSubContextMeta(ctx, sc.Path, sc.Fields), event)
+	sc.Logger.trigger(WithSubContextMeta(ctx, sc.Path, sc.Fields), event, false)
+}
+
+// SyncTrigger triggers an event in the subcontext synchronously..
+func (sc Context) SyncTrigger(ctx context.Context, event Event) {
+	sc.Logger.trigger(WithSubContextMeta(ctx, sc.Path, sc.Fields), event, true)
 }
 
 // --------------------------------------------------------------------------------
