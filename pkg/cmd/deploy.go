@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/blend/go-sdk/logger"
@@ -12,7 +11,6 @@ import (
 	"github.com/wcharczuk/blogctl/pkg/aws/cloudfront"
 	"github.com/wcharczuk/blogctl/pkg/aws/s3"
 	"github.com/wcharczuk/blogctl/pkg/config"
-	"github.com/wcharczuk/blogctl/pkg/engine"
 )
 
 // Deploy returns the deploy command.
@@ -24,12 +22,13 @@ func Deploy(flags *config.PersistentFlags) *cobra.Command {
 		Aliases: []string{"d", "deploy"},
 		Short:   "Deploy the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, cfgPath, err := engine.ReadConfig(flags)
+			cfg, cfgPath, err := config.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
+
 			log := Logger(cfg, "deploy")
-			fmt.Fprintf(log.Logger.Output, banner)
+
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}

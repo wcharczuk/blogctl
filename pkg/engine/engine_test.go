@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 	assert := assert.New(t)
 
 	defaults := config.Config{}
+
 	e := &Engine{Config: defaults}
 	slugTemplate, err := e.ParseSlugTemplate()
 	assert.Nil(err)
@@ -33,7 +35,12 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 func TestEngineBuild(t *testing.T) {
 	assert := assert.New(t)
 
-	config, path, err := config.ReadConfig(&config.PersistentFlags{ConfigPath: ref.String("./testdata/config.yml")})
+	os.Chdir("testdata")
+
+	config, path, err := config.ReadConfig(&config.PersistentFlags{
+		ConfigPath:  ref.String("./config.yml"),
+		Parallelism: ref.Int(0),
+	})
 	assert.Nil(err)
 	assert.True(strings.HasSuffix(path, "testdata/config.yml"))
 	assert.Nil(New(config).Generate(context.TODO()))

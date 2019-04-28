@@ -3,8 +3,10 @@ package cmd
 import (
 	"context"
 
-	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
+
+	"github.com/blend/go-sdk/logger"
+
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"
 )
@@ -16,7 +18,7 @@ func Build(flags *config.PersistentFlags) *cobra.Command {
 		Short:   "Build the photoblog",
 		Aliases: []string{"b", "build", "g", "generate"},
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, cfgPath, err := engine.ReadConfig(flags)
+			cfg, cfgPath, err := config.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}

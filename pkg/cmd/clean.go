@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/spf13/cobra"
 
 	"github.com/blend/go-sdk/logger"
-	"github.com/spf13/cobra"
+
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"
 )
@@ -18,12 +19,13 @@ func Clean(flags *config.PersistentFlags) *cobra.Command {
 		Short:   "Clean the thumbnail cache",
 		Aliases: []string{"c"},
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, configPath, err := engine.ReadConfig(flags)
+			cfg, configPath, err := config.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
+
 			log := Logger(cfg, "clean")
-			fmt.Fprintf(log.Logger.Output, banner)
+
 			if configPath != "" {
 				log.Infof("using config path: %s", configPath)
 			}

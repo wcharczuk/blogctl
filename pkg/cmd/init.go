@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
+	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/sh"
 
 	"github.com/spf13/cobra"
@@ -25,7 +27,7 @@ func Init(flags *config.PersistentFlags) *cobra.Command {
 				sh.Fatalf("must provide a folder name")
 			}
 
-			fmt.Printf(banner)
+			slant.Print(os.Stdout, "blogctl")
 			fmt.Println("Initializing a new blog")
 			fmt.Println("Please provide the fields for the `config.yml`")
 			fmt.Println("They will be prompted as `Field (explanation) [default value]`")
