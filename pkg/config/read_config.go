@@ -18,6 +18,7 @@ func ReadConfig(flags *PersistentFlags) (cfg Config, path string, err error) {
 		if !ok || c == nil {
 			return nil
 		}
+
 		return configutil.AnyError(
 			env.Env().ReadInto(c),
 			configutil.SetInt(&c.Parallelism, configutil.Int(*flags.Parallelism), configutil.Int(c.Parallelism), configutil.Int(runtime.NumCPU())),

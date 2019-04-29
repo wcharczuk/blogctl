@@ -3,7 +3,6 @@ package engine
 import (
 	"context"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -39,9 +38,10 @@ func TestEngineBuild(t *testing.T) {
 
 	config, path, err := config.ReadConfig(&config.PersistentFlags{
 		ConfigPath:  ref.String("./config.yml"),
-		Parallelism: ref.Int(0),
+		LoggerFlags: &([]string{}),
+		Parallelism: ref.Int(4),
 	})
 	assert.Nil(err)
-	assert.True(strings.HasSuffix(path, "testdata/config.yml"))
+	assert.Equal("./config.yml", path)
 	assert.Nil(New(config).Generate(context.TODO()))
 }
