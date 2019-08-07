@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/logger"
 
@@ -19,7 +20,7 @@ import (
 )
 
 // New returns a new post command.
-func New(flags config.PersistentFlags) *cobra.Command {
+func New(flags config.Flags) *cobra.Command {
 	var title, location, posted *string
 	var tags *[]string
 	cmd := &cobra.Command{
@@ -34,7 +35,8 @@ func New(flags config.PersistentFlags) *cobra.Command {
 				logger.FatalExit(err)
 			}
 
-			log := Logger(cfg, "new")
+			log := Logger(flags, "new")
+			slant.Print(log.Output, "BLOGCTL")
 
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)

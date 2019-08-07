@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/logger"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
@@ -12,8 +13,7 @@ import (
 )
 
 // Clean returns the clean command.
-func Clean(flags config.PersistentFlags) *cobra.Command {
-	var dryRun *bool
+func Clean(flags config.Flags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "clean",
 		Short:   "Clean the thumbnail cache",
@@ -24,19 +24,23 @@ func Clean(flags config.PersistentFlags) *cobra.Command {
 				logger.FatalExit(err)
 			}
 
-			log := Logger(cfg, "clean")
+			log := Logger(flags, "clean")
+			slant.Print(log.Output, "BLOGCTL")
 
 			if configPath != "" {
 				log.Infof("using config path: %s", configPath)
 			}
 
-			if err := engine.MustNew(engine.OptConfig(cfg), engine.OptLog(log)).CleanThumbnailCache(context.Background(), *dryRun); err != nil {
+			if err := engine.MustNew(
+				engine.OptConfig(cfg),
+				engine.OptLog(log),
+				engine.OptParallelism(*flags.Parallelism),
+				engine.OptDryRun(*flags.DryRun),
+			).CleanThumbnailCache(context.Background()); err != nil {
 				logger.FatalExit(err)
 			}
 			log.Info("complete")
 		},
 	}
-
-	dryRun = cmd.Flags().Bool("dry-run", false, "If we should only print which paths we would delete")
 	return cmd
 }

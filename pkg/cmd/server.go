@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/graceful"
 	"github.com/blend/go-sdk/logger"
 	"github.com/blend/go-sdk/web"
@@ -13,7 +14,7 @@ import (
 )
 
 // Server returns the server command.
-func Server(flags config.PersistentFlags) *cobra.Command {
+func Server(flags config.Flags) *cobra.Command {
 	var bindAddr *string
 	var statics *[]string
 	cmd := &cobra.Command{
@@ -26,7 +27,8 @@ func Server(flags config.PersistentFlags) *cobra.Command {
 				logger.FatalExit(err)
 			}
 
-			log := Logger(cfg, "server")
+			log := Logger(flags, "server")
+			slant.Print(log.Output, "BLOGCTL")
 
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)

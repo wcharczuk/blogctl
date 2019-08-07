@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/logger"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
@@ -12,7 +13,7 @@ import (
 )
 
 // Build returns the build command.
-func Build(flags config.PersistentFlags) *cobra.Command {
+func Build(flags config.Flags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "build",
 		Short:   "Build the photoblog",
@@ -23,13 +24,19 @@ func Build(flags config.PersistentFlags) *cobra.Command {
 				logger.FatalExit(err)
 			}
 
-			log := Logger(cfg, "build")
+			log := Logger(flags, "build")
+			slant.Print(log.Output, "BLOGCTL")
 
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}
+			log.Infof("using parallelism: %d", *flags.Parallelism)
 
-			if err := engine.MustNew(engine.OptConfig(cfg), engine.OptLog(log)).Generate(context.Background()); err != nil {
+			if err := engine.MustNew(
+				engine.OptConfig(cfg),
+				engine.OptLog(log),
+				engine.OptParallelism(*flags.Parallelism),
+			).Generate(context.Background()); err != nil {
 				logger.FatalExit(err)
 			}
 			log.Info("complete")

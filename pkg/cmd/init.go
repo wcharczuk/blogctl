@@ -16,7 +16,7 @@ import (
 )
 
 // Init returns the init command.
-func Init(flags config.PersistentFlags) *cobra.Command {
+func Init(flags config.Flags) *cobra.Command {
 	return &cobra.Command{
 		Use:   "init [NAME]",
 		Short: "Initialize a new blog",

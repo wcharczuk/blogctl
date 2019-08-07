@@ -1,8 +1,6 @@
 package config
 
 import (
-	"runtime"
-
 	"github.com/blend/go-sdk/web"
 
 	"github.com/blend/go-sdk/logger"
@@ -73,8 +71,6 @@ type Config struct {
 
 	// below are knobs you can turn tweak specific things.
 
-	// Parallelism lets you set the number of goroutines to use for resource intensive steps.
-	Parallelism int `json:"parallelism" yaml:"parallelism"`
 	// SkipTags instructs the engine to not create tag summary pages.
 	SkipTags bool `json:"skipTags,omitempty" yaml:"skipTags,omitempty"`
 	// SkipJSONData instructs the engine not to create a data.json file.
@@ -201,12 +197,4 @@ func (c Config) ImageSizesOrDefault() []int {
 		return c.ImageSizes
 	}
 	return constants.DefaultImageSizes
-}
-
-// ParallelismOrDefault returns the engine parallelism or a default (typically runtime.NumCPU())
-func (c Config) ParallelismOrDefault() int {
-	if c.Parallelism > 0 {
-		return c.Parallelism
-	}
-	return runtime.NumCPU()
 }

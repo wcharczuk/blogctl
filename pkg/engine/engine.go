@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"time"
 
@@ -65,10 +66,36 @@ func OptLog(log Logger) Option {
 	}
 }
 
+// OptParallelism sets the engine parallelism if relevant.
+func OptParallelism(paralellism int) Option {
+	return func(e *Engine) error {
+		e.Parallelism = paralellism
+		return nil
+	}
+}
+
+// OptDryRun sets DryRun on the engine.
+func OptDryRun(dryRun bool) Option {
+	return func(e *Engine) error {
+		e.DryRun = dryRun
+		return nil
+	}
+}
+
 // Engine returns a
 type Engine struct {
-	Config config.Config
-	Log    Logger
+	Config      config.Config
+	Parallelism int
+	DryRun      bool
+	Log         Logger
+}
+
+// ParallelismOrDefault is the parallelism or a default.
+func (e Engine) ParallelismOrDefault() int {
+	if e.Parallelism > 0 {
+		return e.Parallelism
+	}
+	return runtime.NumCPU()
 }
 
 // Generate generates the blog to the given output directory.
@@ -221,7 +248,7 @@ func (e Engine) BuildRenderContext(ctx context.Context) (*model.RenderContext, e
 func (e Engine) Render(ctx context.Context) error {
 	renderContext := GetRenderContext(ctx)
 
-	MaybeInfof(e.Log, "rendering posts with parallelism %d", e.Config.ParallelismOrDefault())
+	MaybeInfof(e.Log, "rendering posts with parallelism %d", e.ParallelismOrDefault())
 	var err error
 
 	outputPath := e.Config.OutputPathOrDefault()
@@ -288,7 +315,7 @@ func (e Engine) Render(ctx context.Context) error {
 			}
 		}
 		return nil
-	}, posts, async.OptBatchParallelism(e.Config.ParallelismOrDefault()), async.OptBatchErrors(batchErrors)).Process(ctx)
+	}, posts, async.OptBatchParallelism(e.ParallelismOrDefault()), async.OptBatchErrors(batchErrors)).Process(ctx)
 
 	if len(batchErrors) > 0 {
 		return <-batchErrors
@@ -355,7 +382,7 @@ func (e Engine) Render(ctx context.Context) error {
 }
 
 // CleanThumbnailCache cleans the thumbnail cache by purging cached thumbnails for posts that may have been deleted.
-func (e Engine) CleanThumbnailCache(ctx context.Context, dryRun bool) error {
+func (e Engine) CleanThumbnailCache(ctx context.Context) error {
 	postsPath := e.Config.PostsPathOrDefault()
 	MaybeInfof(e.Log, "searching `%s` for posts", postsPath)
 	postSums := map[string]bool{}
@@ -420,7 +447,7 @@ func (e Engine) CleanThumbnailCache(ctx context.Context, dryRun bool) error {
 
 	// purge folders
 	for _, path := range orphanedCachedPosts {
-		if !dryRun {
+		if !e.DryRun {
 			if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
 				return ex.New(err)
 			}

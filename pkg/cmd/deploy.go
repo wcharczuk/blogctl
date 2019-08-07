@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/logger"
 	"github.com/spf13/cobra"
 
@@ -14,24 +15,25 @@ import (
 )
 
 // Deploy returns the deploy command.
-func Deploy(flags config.PersistentFlags) *cobra.Command {
+func Deploy(flags config.Flags) *cobra.Command {
 	var bucket, region *string
-	var dryRun *bool
 	cmd := &cobra.Command{
 		Use:     "deploy",
 		Aliases: []string{"d", "deploy"},
 		Short:   "Deploy the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, cfgPath, err := config.ReadConfig(flags)
+			cfg, configPath, err := config.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
 
-			log := Logger(cfg, "deploy")
+			log := Logger(flags, "deploy")
+			slant.Print(log.Output, "BLOGCTL")
 
-			if cfgPath != "" {
-				log.Infof("using config path: %s", cfgPath)
+			if configPath != "" {
+				log.Infof("using config path: %s", configPath)
 			}
+			log.Infof("using parallelism: %d", *flags.Parallelism)
 
 			if *bucket == "" {
 				*bucket = cfg.S3.Bucket
@@ -52,13 +54,13 @@ func Deploy(flags config.PersistentFlags) *cobra.Command {
 			mgr := s3.New(&aws.Config{
 				Region: *region,
 			})
-			mgr.DryRun = *dryRun
 			mgr.Log = log
+			mgr.Parallelism = *flags.Parallelism
+			mgr.DryRun = *flags.DryRun
 			mgr.PutObjectDefaults = s3.File{
 				ACL: s3.ACLPublicRead,
 			}
 			paths, err := mgr.SyncDirectory(context.Background(), cfg.OutputPathOrDefault(), *bucket)
-
 			if err != nil {
 				log.Fatal(err)
 				os.Exit(1)
@@ -79,7 +81,6 @@ func Deploy(flags config.PersistentFlags) *cobra.Command {
 		},
 	}
 
-	dryRun = cmd.Flags().Bool("dry-run", false, "If we should only print the plan, and not realize changes")
 	bucket = cmd.Flags().String("bucket", "", "An optional specific bucket (in the form s3://...)")
 	region = cmd.Flags().String("region", "", "An optional aws region")
 	return cmd

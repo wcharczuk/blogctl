@@ -8,7 +8,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+
+	"github.com/blend/go-sdk/async"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -23,18 +27,33 @@ import (
 // New returns a new manager.
 func New(cfg *aws.Config) *Manager {
 	return &Manager{
-		Config:  cfg,
-		Session: aws.NewSession(cfg),
+		Config: cfg,
+		Ignores: []string{
+			".DS_Store",
+			".git",
+		},
+		Session:     aws.NewSession(cfg),
+		Parallelism: runtime.NumCPU(),
 	}
 }
 
 // Manager is a helper for uploading files to s3.
 type Manager struct {
 	Log               logger.Log
+	Ignores           []string
 	Config            *aws.Config
 	Session           *session.Session
 	PutObjectDefaults File
 	DryRun            bool
+	Parallelism       int
+}
+
+// ParallelismOrDefault returns the parallelism or a default.
+func (m Manager) ParallelismOrDefault() int {
+	if m.Parallelism > 0 {
+		return m.Parallelism
+	}
+	return runtime.NumCPU()
 }
 
 // GetKey returns the relative path for a given file.
@@ -50,28 +69,20 @@ func (m Manager) GetKey(rootPath, workingPath string) string {
 
 // SyncDirectory sync's a directory.
 // It returns a list of invalidated keys (i.e. keys to update or remove), and an error.
-func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string) ([]string, error) {
+func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string) (invalidations []string, err error) {
 	if m.DryRun {
-		m.Log.Debugf("dry run; not realizing changes")
+		m.Log.Debugf("sync directory (dry run): not realizing changes")
 	}
-	remoteETags := make(map[string]string)
-	localKeys := make(map[string]bool)
-	invalidated := []string{}
-
-	// walk the s3 bucket, look for files that need to be removed ...
-	remoteFiles, err := m.List(ctx, bucket)
-	if err != nil {
+	localFiles := make(chan interface{}, 1024)
+	if err := m.DiscoverFiles(ctx, localFiles, directoryPath); err != nil {
 		return nil, err
 	}
-	for _, remoteFile := range remoteFiles {
-		key := remoteFile.Key
-		if !strings.HasPrefix(key, "/") {
-			key = "/" + key
-		}
-		remoteETags[key] = aws.StripQuotes(remoteFile.ETag)
-	}
+	invalidations, err = m.ProcessFiles(ctx, localFiles, directoryPath, bucket)
+	return
+}
 
-	// walk the directory ...
+// DiscoverFiles discovers local files.
+func (m Manager) DiscoverFiles(ctx context.Context, localFiles chan interface{}, directoryPath string) (err error) {
 	err = filepath.Walk(directoryPath, func(currentPath string, fileInfo os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -79,39 +90,72 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 		if currentPath == directoryPath {
 			return nil
 		}
-		if strings.HasSuffix(currentPath, ".DS_Store") {
-			return nil
+		for _, ignore := range m.Ignores {
+			if strings.HasSuffix(currentPath, ignore) {
+				return nil
+			}
 		}
 		if fileInfo.IsDir() {
 			return nil
 		}
+		localFiles <- currentPath
+		return nil
+	})
+	return
+}
 
-		key := m.GetKey(directoryPath, currentPath)
+// ProcessFiles processes the files list.
+func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, directoryPath, bucket string) (invalidated []string, err error) {
+	remoteETags := make(map[string]string)
+	localKeys := new(Set)
 
-		localKeys[key] = true
+	remoteFiles, err := m.List(ctx, bucket)
+	if err != nil {
+		return nil, err
+	}
 
-		// process files and directories ...
-		remoteETag, ok := remoteETags[key]
+	remoteFileBatch := make(chan interface{}, len(remoteFiles))
+	for _, remoteFile := range remoteFiles {
+		key := remoteFile.Key
+		if !strings.HasPrefix(key, "/") {
+			key = "/" + key
+		}
+		remoteETags[key] = aws.StripQuotes(remoteFile.ETag)
+		remoteFileBatch <- remoteFile
+	}
+
+	errors := make(chan error, len(localFiles))
+
+	// create an async batch to process the file list.
+	async.NewBatch(func(ctx context.Context, workItem interface{}) error {
+		file, fileOK := workItem.(string)
+		if !fileOK {
+			return ex.New("process files; batch work item was not a string")
+		}
+
+		key := m.GetKey(directoryPath, file)
+		localKeys.Set(key)
 
 		var localETag string
-		if ok {
-			localETag, err = m.GenerateETag(currentPath)
+		remoteETag, hasRemoteFile := remoteETags[key]
+		if hasRemoteFile { // if we need to compare against a remote etag
+			localETag, err = m.GenerateETag(file)
 			if err != nil {
 				return err
 			}
 		}
 
-		if !ok || remoteETag != localETag {
-			m.Log.Infof("putting %s", key)
+		if !hasRemoteFile || remoteETag != localETag {
+			logger.MaybeInfof(m.Log, "putting %s", key)
 
-			contentType, err := webutil.DetectContentType(currentPath)
+			contentType, err := webutil.DetectContentType(file)
 			if err != nil {
 				return err
 			}
 
 			if !m.DryRun {
 				if err := m.Put(ctx, File{
-					FilePath:    currentPath,
+					FilePath:    file,
 					Key:         key,
 					Bucket:      bucket,
 					ContentType: contentType,
@@ -119,36 +163,56 @@ func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string
 					return err
 				}
 			}
-			// only invalidate files we know to be present (not new files)
-			if ok {
+			if hasRemoteFile {
 				invalidated = append(invalidated, key)
 			}
 		} else {
-			m.Log.Infof("skipping %s (unchanged)", key)
+			logger.MaybeInfof(m.Log, "skipping %s (unchanged)", key)
 		}
-
 		return nil
-	})
+	}, localFiles, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors)).Process(ctx)
 
-	if err != nil {
-		return nil, ex.New(err)
+	// print errors if any were produced by the batch.
+	if errorCount := len(errors); errorCount > 0 {
+		for x := 0; x < errorCount; x++ {
+			logger.MaybeError(m.Log, <-errors)
+		}
+		return nil, ex.New("process files; issues sending files to s3")
 	}
 
-	for _, remoteFile := range remoteFiles {
+	var invalidatedSync sync.Mutex
+	async.NewBatch(func(ctx context.Context, workItem interface{}) error {
+		remoteFile, remoteFileOK := workItem.(File)
+		if !remoteFileOK {
+			return ex.New("process files; remote cleanup batch work item was not a file")
+		}
+
 		key := remoteFile.Key
 		if !strings.HasPrefix(key, "/") {
 			key = "/" + key
 		}
 
-		if _, ok := localKeys[key]; !ok {
-			m.Log.Infof("removing remote %s", remoteFile.Key)
+		if !localKeys.Has(key) {
+			logger.MaybeInfof(m.Log, "removing remote %s", remoteFile.Key)
 			if !m.DryRun {
 				if err := m.Delete(ctx, bucket, remoteFile.Key); err != nil {
-					return nil, err
+					return err
 				}
 			}
+
+			invalidatedSync.Lock()
 			invalidated = append(invalidated, key)
+			invalidatedSync.Unlock()
 		}
+		return nil
+	}, remoteFileBatch, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors))
+
+	// print errors if any were produced by the batch.
+	if errorCount := len(errors); errorCount > 0 {
+		for x := 0; x < errorCount; x++ {
+			logger.MaybeError(m.Log, <-errors)
+		}
+		return nil, ex.New("process files; issues removing files from s3")
 	}
 
 	return invalidated, nil

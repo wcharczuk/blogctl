@@ -36,7 +36,7 @@ func TestEngineBuild(t *testing.T) {
 
 	os.Chdir("testdata")
 
-	cfg, path, err := config.ReadConfig(config.PersistentFlags{
+	cfg, path, err := config.ReadConfig(config.Flags{
 		ConfigPath:  ref.String("./config.yml"),
 		LoggerFlags: &([]string{}),
 		Parallelism: ref.Int(4),
