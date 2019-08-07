@@ -14,9 +14,9 @@ import (
 
 const (
 	// Flag is a logger event flag.
-	Flag = "http.request"
+	Flag = "http.client.request"
 	// FlagResponse is a logger event flag.
-	FlagResponse = "http.request.response"
+	FlagResponse = "http.client.response"
 )
 
 // NewEvent returns a new event.
@@ -62,10 +62,14 @@ func (e *Event) WriteText(tf logger.TextFormatter, wr io.Writer) {
 func (e *Event) MarshalJSON() ([]byte, error) {
 	output := make(map[string]interface{})
 	if e.Request != nil {
+		var url string
+		if e.Request.URL != nil {
+			url = e.Request.URL.String()
+		}
 		output["req"] = map[string]interface{}{
 			"startTime": e.Started,
 			"method":    e.Request.Method,
-			"url":       e.Request.URL.String(),
+			"url":       url,
 			"headers":   e.Request.Header,
 		}
 	}
@@ -85,6 +89,23 @@ func (e *Event) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(logger.MergeDecomposed(e.EventMeta.Decompose(), output))
+}
+
+// EventJSONSchema is the json schema of the logger event.
+type EventJSONSchema struct {
+	Req struct {
+		StartTime time.Time           `json:"startTime"`
+		Method    string              `json:"method"`
+		URL       string              `json:"url"`
+		Headers   map[string][]string `json:"headers"`
+	} `json:"req"`
+	Res struct {
+		CompleteTime  time.Time           `json:"completeTime"`
+		StatusCode    int                 `json:"statusCode"`
+		ContentLength int                 `json:"contentLength"`
+		Headers       map[string][]string `json:"headers"`
+	} `json:"res"`
+	Body string `json:"body"`
 }
 
 func tryHeader(headers http.Header, keys ...string) string {

@@ -11,14 +11,14 @@ import (
 )
 
 // Clean returns the clean command.
-func Clean(flags *config.PersistentFlags) *cobra.Command {
+func Clean(flags config.PersistentFlags) *cobra.Command {
 	var dryRun *bool
 	cmd := &cobra.Command{
 		Use:     "clean",
 		Short:   "Clean the thumbnail cache",
 		Aliases: []string{"c"},
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, configPath, err := engine.ReadConfig(flags)
+			cfg, configPath, err := config.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
@@ -28,7 +28,7 @@ func Clean(flags *config.PersistentFlags) *cobra.Command {
 				log.Infof("using config path: %s", configPath)
 			}
 
-			if err := engine.New(cfg).WithLogger(log).CleanThumbnailCache(context.Background(), *dryRun); err != nil {
+			if err := engine.MustNew(engine.OptConfig(cfg), engine.OptLog(log)).CleanThumbnailCache(context.Background(), *dryRun); err != nil {
 				logger.FatalExit(err)
 			}
 			log.Info("complete")

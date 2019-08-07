@@ -1,6 +1,8 @@
 package r2
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // OptDisableKeepAlives disables keep alives.
 func OptDisableKeepAlives(disableKeepAlives bool) Option {

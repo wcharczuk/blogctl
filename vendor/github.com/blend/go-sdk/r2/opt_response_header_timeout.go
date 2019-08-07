@@ -8,6 +8,9 @@ import (
 // OptResponseHeaderTimeout sets the client transport ResponseHeaderTimeout.
 func OptResponseHeaderTimeout(d time.Duration) Option {
 	return func(r *Request) error {
+		if r.Client == nil {
+			r.Client = &http.Client{}
+		}
 		if r.Client.Transport == nil {
 			r.Client.Transport = &http.Transport{}
 		}

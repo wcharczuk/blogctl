@@ -25,8 +25,16 @@ func (jrp JSONResultProvider) NotFound() Result {
 // NotAuthorized returns a service response.
 func (jrp JSONResultProvider) NotAuthorized() Result {
 	return &JSONResult{
-		StatusCode: http.StatusForbidden,
+		StatusCode: http.StatusUnauthorized,
 		Response:   "Not Authorized",
+	}
+}
+
+// Forbidden returns a 403 Forbidden response.
+func (jrp JSONResultProvider) Forbidden() Result {
+	return &JSONResult{
+		StatusCode: http.StatusForbidden,
+		Response:   "Forbidden",
 	}
 }
 

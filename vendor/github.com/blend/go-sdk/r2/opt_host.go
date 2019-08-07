@@ -1,6 +1,8 @@
 package r2
 
-import "net/url"
+import (
+	"net/url"
+)
 
 // OptHost sets the url host.
 func OptHost(host string) Option {

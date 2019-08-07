@@ -1,8 +1,8 @@
 package web
 
 import (
-	"encoding/base64"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -19,8 +19,6 @@ type Config struct {
 	HandleOptions             bool          `json:"handleOptions,omitempty" yaml:"handleOptions,omitempty"`
 	HandleMethodNotAllowed    bool          `json:"handleMethodNotAllowed,omitempty" yaml:"handleMethodNotAllowed,omitempty"`
 	DisablePanicRecovery      bool          `json:"disablePanicRecovery,omitempty" yaml:"disablePanicRecovery,omitempty"`
-	AuthManagerMode           string        `json:"authManagerMode" yaml:"authManagerMode"`
-	AuthSecret                string        `json:"authSecret" yaml:"authSecret" env:"AUTH_SECRET"`
 	SessionTimeout            time.Duration `json:"sessionTimeout,omitempty" yaml:"sessionTimeout,omitempty" env:"SESSION_TIMEOUT"`
 	SessionTimeoutIsRelative  bool          `json:"sessionTimeoutIsRelative,omitempty" yaml:"sessionTimeoutIsRelative,omitempty" env:"SESSION_TIMEOUT_RELATIVE"`
 
@@ -29,6 +27,7 @@ type Config struct {
 	CookieSameSite string `json:"cookieSameSite,omitempty" yaml:"cookieSameSite,omitempty" env:"COOKIE_SAME_SITE"`
 	CookieName     string `json:"cookieName,omitempty" yaml:"cookieName,omitempty" env:"COOKIE_NAME"`
 	CookiePath     string `json:"cookiePath,omitempty" yaml:"cookiePath,omitempty" env:"COOKIE_PATH"`
+	CookieDomain   string `json:"cookieDomain,omitempty" yaml:"cookieDomain,omitempty" env:"COOKIE_DOMAIN"`
 
 	DefaultHeaders      map[string]string `json:"defaultHeaders,omitempty" yaml:"defaultHeaders,omitempty"`
 	MaxHeaderBytes      int               `json:"maxHeaderBytes,omitempty" yaml:"maxHeaderBytes,omitempty" env:"MAX_HEADER_BYTES"`
@@ -87,23 +86,6 @@ func (c Config) BaseURLIsSecureScheme() bool {
 	return strings.HasPrefix(strings.ToLower(c.BaseURL), SchemeHTTPS) || strings.HasPrefix(strings.ToLower(c.BaseURL), SchemeSPDY)
 }
 
-// AuthManagerModeOrDefault returns the auth manager mode.
-func (c Config) AuthManagerModeOrDefault() AuthManagerMode {
-	if c.AuthManagerMode != "" {
-		return AuthManagerMode(c.AuthManagerMode)
-	}
-	return AuthManagerModeRemote
-}
-
-// MustAuthSecret returns the auth secret and panics if there is an error decoding it.
-func (c Config) MustAuthSecret() []byte {
-	decoded, err := base64.StdEncoding.DecodeString(c.AuthSecret)
-	if err != nil {
-		panic(err)
-	}
-	return decoded
-}
-
 // SessionTimeoutOrDefault returns a property or a default.
 func (c Config) SessionTimeoutOrDefault() time.Duration {
 	if c.SessionTimeout > 0 {
@@ -128,6 +110,14 @@ func (c Config) CookiePathOrDefault() string {
 	return DefaultCookiePath
 }
 
+// CookieDomainOrDefault returns a property or a default.
+func (c Config) CookieDomainOrDefault() string {
+	if c.CookieDomain != "" {
+		return c.CookieDomain
+	}
+	return ""
+}
+
 // CookieSecureOrDefault returns a property or a default.
 func (c Config) CookieSecureOrDefault() bool {
 	if c.CookieSecure != nil {
@@ -148,11 +138,11 @@ func (c Config) CookieHTTPOnlyOrDefault() bool {
 }
 
 // CookieSameSiteOrDefault returns a property or a default.
-func (c Config) CookieSameSiteOrDefault() string {
+func (c Config) CookieSameSiteOrDefault() http.SameSite {
 	if c.CookieSameSite != "" {
-		return c.CookieSameSite
+		return webutil.MustParseSameSite(c.CookieSameSite)
 	}
-	return DefaultCookieSameSite
+	return 0
 }
 
 // MaxHeaderBytesOrDefault returns the maximum header size in bytes or a default.

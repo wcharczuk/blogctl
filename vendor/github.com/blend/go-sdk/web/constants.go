@@ -1,9 +1,8 @@
 package web
 
 import (
+	"net/http"
 	"time"
-
-	"github.com/blend/go-sdk/webutil"
 )
 
 const (
@@ -68,7 +67,7 @@ const (
 	HeaderUserAgent = "User-Agent"
 
 	// HeaderVary is the "Vary" header.
-	// It is used to indicate what fields should be used by the client as cache keys.
+	// It is used to indicate what fields should not be used by the client as cache keys.
 	HeaderVary = "Vary"
 
 	// HeaderXServedBy is the "X-Served-By" header.
@@ -115,18 +114,6 @@ const (
 	ContentEncodingIdentity = "identity"
 	// ContentEncodingGZIP is the gzip (compressed) content encoding.
 	ContentEncodingGZIP = "gzip"
-)
-
-// AuthManagerMode is an auth manager mode.
-type AuthManagerMode string
-
-const (
-	// AuthManagerModeJWT is the jwt auth mode.
-	AuthManagerModeJWT AuthManagerMode = "jwt"
-	// AuthManagerModeRemote is the remote (i.e. database) managed auth mode.
-	AuthManagerModeRemote AuthManagerMode = "remote"
-	// AuthManagerModeLocal is the local map cache auth mode.
-	AuthManagerModeLocal AuthManagerMode = "local"
 )
 
 const (
@@ -241,8 +228,6 @@ const (
 	DefaultCookieSecure = true
 	// DefaultCookieHTTPOnly returns what the default value for the `HTTPOnly` bit of issued cookies will be.
 	DefaultCookieHTTPOnly = true
-	// DefaultCookieSameSite returns what the default value for the `SameSite` bit of issued cookies will be.
-	DefaultCookieSameSite = webutil.SameSiteDefault
 	// DefaultSessionTimeout is the default absolute timeout for a session (24 hours as a sane default).
 	DefaultSessionTimeout time.Duration = 24 * time.Hour
 	// DefaultUseSessionCache is the default if we should use the auth manager session cache.
@@ -264,9 +249,8 @@ const (
 )
 
 // DefaultHeaders are the default headers added by go-web.
-var DefaultHeaders = map[string]string{
-	HeaderServer:    PackageName,
-	HeaderXServedBy: PackageName,
+var DefaultHeaders = http.Header{
+	HeaderServer: []string{PackageName},
 }
 
 // SessionLockPolicy is a lock policy.

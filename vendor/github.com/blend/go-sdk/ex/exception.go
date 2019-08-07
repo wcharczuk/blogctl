@@ -18,7 +18,7 @@ var (
 // concrete types intentionally; it is important for the semantics of typed pointers and nil
 // for this to return an interface because (*Ex)(nil) != nil, but (error)(nil) == nil.
 func New(class interface{}, options ...Option) Exception {
-	return NewWithStackDepth(class, defaultNewStartDepth, options...)
+	return NewWithStackDepth(class, DefaultNewStartDepth, options...)
 }
 
 // Exception is a meta interface for exceptions.
@@ -40,18 +40,18 @@ func NewWithStackDepth(class interface{}, startDepth int, options ...Option) Exc
 		ex = typed
 	} else if err, ok := class.(error); ok {
 		ex = &Ex{
-			Class: err,
-			Stack: callers(startDepth),
+			Class:      err,
+			StackTrace: Callers(startDepth),
 		}
 	} else if str, ok := class.(string); ok {
 		ex = &Ex{
-			Class: Class(str),
-			Stack: callers(startDepth),
+			Class:      Class(str),
+			StackTrace: Callers(startDepth),
 		}
 	} else {
 		ex = &Ex{
-			Class: Class(fmt.Sprint(class)),
-			Stack: callers(startDepth),
+			Class:      Class(fmt.Sprint(class)),
+			StackTrace: Callers(startDepth),
 		}
 	}
 
@@ -59,37 +59,6 @@ func NewWithStackDepth(class interface{}, startDepth int, options ...Option) Exc
 		option(ex)
 	}
 	return ex
-}
-
-// Option is an exception option.
-type Option func(*Ex)
-
-// OptMessage sets the exception message from a given list of arguments with fmt.Sprint(args...).
-func OptMessage(args ...interface{}) Option {
-	return func(ex *Ex) {
-		ex.Message = fmt.Sprint(args...)
-	}
-}
-
-// OptMessagef sets the exception message from a given list of arguments with fmt.Sprintf(format, args...).
-func OptMessagef(format string, args ...interface{}) Option {
-	return func(ex *Ex) {
-		ex.Message = fmt.Sprintf(format, args...)
-	}
-}
-
-// OptStack sets the exception stack.
-func OptStack(stack StackTrace) Option {
-	return func(ex *Ex) {
-		ex.Stack = stack
-	}
-}
-
-// OptInner sets an inner or wrapped ex.
-func OptInner(inner error) Option {
-	return func(ex *Ex) {
-		ex.Inner = NewWithStackDepth(inner, defaultNewStartDepth)
-	}
 }
 
 // Ex is an error with a stack trace.
@@ -101,8 +70,8 @@ type Ex struct {
 	Message string
 	// Inner holds the original error in cases where we're wrapping an error with a stack trace.
 	Inner error
-	// Stack is the call stack frames used to create the stack output.
-	Stack StackTrace
+	// StackTrace is the call stack frames used to create the stack output.
+	StackTrace StackTrace
 }
 
 // WithMessage sets the exception message.
@@ -122,7 +91,7 @@ func (e *Ex) WithMessagef(format string, args ...interface{}) Exception {
 // WithInner sets the inner ex.
 // Deprecation notice: This method is included as a migraition path from v2, and will be removed after v3.
 func (e *Ex) WithInner(err error) Exception {
-	e.Inner = NewWithStackDepth(err, defaultNewStartDepth)
+	e.Inner = NewWithStackDepth(err, DefaultNewStartDepth)
 	return e
 }
 
@@ -135,30 +104,21 @@ func (e *Ex) WithInner(err error) Exception {
 func (e *Ex) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
-		if s.Flag('+') {
-			if e.Class != nil && len(e.Class.Error()) > 0 {
-				fmt.Fprintf(s, "%s", e.Class)
-				if len(e.Message) > 0 {
-					fmt.Fprintf(s, "\nmessage: %s", e.Message)
-				}
-			} else if len(e.Message) > 0 {
-				io.WriteString(s, e.Message)
-			}
-			e.Stack.Format(s, verb)
-		} else if s.Flag('-') {
-			e.Stack.Format(s, verb)
-		} else {
+		if e.Class != nil && len(e.Class.Error()) > 0 {
 			io.WriteString(s, e.Class.Error())
-			if len(e.Message) > 0 {
-				fmt.Fprintf(s, "\nmessage: %s", e.Message)
-			}
+		}
+		if len(e.Message) > 0 {
+			io.WriteString(s, "; "+e.Message)
+		}
+		if s.Flag('+') {
+			e.StackTrace.Format(s, verb)
 		}
 		if e.Inner != nil {
 			if typed, ok := e.Inner.(fmt.Formatter); ok {
-				fmt.Fprint(s, "\ninner: ")
+				fmt.Fprint(s, "\n")
 				typed.Format(s, verb)
 			} else {
-				fmt.Fprintf(s, "\ninner: %v", e.Inner)
+				fmt.Fprintf(s, "\n%v", e.Inner)
 			}
 		}
 		return
@@ -166,7 +126,11 @@ func (e *Ex) Format(s fmt.State, verb rune) {
 		io.WriteString(s, e.Class.Error())
 	case 'i':
 		if e.Inner != nil {
-			io.WriteString(s, e.Inner.Error())
+			if typed, ok := e.Inner.(fmt.Formatter); ok {
+				typed.Format(s, verb)
+			} else {
+				fmt.Fprintf(s, "%v", e.Inner)
+			}
 		}
 	case 'm':
 		io.WriteString(s, e.Message)
@@ -187,8 +151,8 @@ func (e *Ex) Decompose() map[string]interface{} {
 	values := map[string]interface{}{}
 	values["Class"] = e.Class.Error()
 	values["Message"] = e.Message
-	if e.Stack != nil {
-		values["Stack"] = e.Stack.Strings()
+	if e.StackTrace != nil {
+		values["StackTrace"] = e.StackTrace.Strings()
 	}
 	if e.Inner != nil {
 		if typed, isTyped := e.Inner.(*Ex); isTyped {
@@ -215,8 +179,8 @@ func (e *Ex) String() string {
 	if len(e.Message) > 0 {
 		io.WriteString(s, " "+e.Message)
 	}
-	if e.Stack != nil {
-		io.WriteString(s, " "+e.Stack.String())
+	if e.StackTrace != nil {
+		io.WriteString(s, " "+e.StackTrace.String())
 	}
 	return s.String()
 }

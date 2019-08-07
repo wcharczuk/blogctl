@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/wcharczuk/blogctl/pkg/config"
-	"github.com/wcharczuk/blogctl/pkg/engine"
 
 	"github.com/blend/go-sdk/graceful"
 	"github.com/blend/go-sdk/logger"
@@ -14,7 +13,7 @@ import (
 )
 
 // Server returns the server command.
-func Server(flags *config.PersistentFlags) *cobra.Command {
+func Server(flags config.PersistentFlags) *cobra.Command {
 	var bindAddr *string
 	var statics *[]string
 	cmd := &cobra.Command{
@@ -22,7 +21,7 @@ func Server(flags *config.PersistentFlags) *cobra.Command {
 		Aliases: []string{"s", "server"},
 		Short:   "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, cfgPath, err := engine.ReadConfig(flags)
+			cfg, cfgPath, err := config.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
@@ -33,7 +32,10 @@ func Server(flags *config.PersistentFlags) *cobra.Command {
 			}
 
 			files := cfg.OutputPathOrDefault()
-			app := web.New(web.OptConfig(cfg.Web), web.OptBindAddr(*bindAddr), web.OptLog(log))
+			app, err := web.New(web.OptConfig(cfg.Web), web.OptBindAddr(*bindAddr), web.OptLog(log))
+			if err != nil {
+				logger.FatalExit(err)
+			}
 			if len(*statics) > 0 {
 				filePaths := append(*statics, files)
 				log.Infof("using static search paths: %s", strings.Join(filePaths, ", "))

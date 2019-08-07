@@ -16,7 +16,7 @@ func New(options ...Option) (*Logger, error) {
 		RecoverPanics: DefaultRecoverPanics,
 		Flags:         NewFlags(DefaultFlags...),
 	}
-	l.Context = NewContext(l, nil)
+	l.Context = NewContext(l, nil, nil)
 	var err error
 	for _, option := range options {
 		if err = option(l); err != nil {
@@ -37,12 +37,19 @@ func MustNew(options ...Option) *Logger {
 
 // All returns a new logger with all flags enabled.
 func All(options ...Option) *Logger {
-	return MustNew(append(options, OptAll())...)
+	return MustNew(append([]Option{
+		OptConfigFromEnv(),
+		OptAll(),
+	}, options...)...)
 }
 
 // None returns a new logger with all flags enabled.
 func None() *Logger {
-	return MustNew(OptNone(), OptOutput(nil))
+	return MustNew(
+		OptNone(),
+		OptOutput(nil),
+		OptFormatter(nil),
+	)
 }
 
 // Prod returns a new logger tuned for production use.
@@ -175,7 +182,7 @@ func (l *Logger) RemoveListener(flag, listenerName string) {
 // The invocations will be queued in a work queue per listener.
 // There are no order guarantees on when these events will be processed across listeners.
 // This call will not block on the event listeners, but will block on the write.
-func (l *Logger) Trigger(ctx context.Context, e Event) {
+func (l *Logger) trigger(ctx context.Context, e Event, sync bool) {
 	if e == nil {
 		return
 	}
@@ -196,35 +203,11 @@ func (l *Logger) Trigger(ctx context.Context, e Event) {
 		l.Unlock()
 
 		for _, listener := range listeners {
-			listener.Work <- EventWithContext{ctx, e}
-		}
-	}
-
-	l.Write(ctx, e)
-}
-
-// SyncTrigger triggers an event synchronously.
-func (l *Logger) SyncTrigger(ctx context.Context, e Event) {
-	if e == nil {
-		return
-	}
-
-	flag := e.GetFlag()
-	if !l.IsEnabled(flag) {
-		return
-	}
-
-	if !IsSkipTrigger(ctx) {
-		var listeners map[string]*Worker
-		l.Lock()
-		if l.Listeners != nil {
-			if flagListeners, ok := l.Listeners[flag]; ok {
-				listeners = flagListeners
+			if sync {
+				listener.Process(EventWithContext{ctx, e})
+			} else {
+				listener.Work <- EventWithContext{ctx, e}
 			}
-		}
-		l.Unlock()
-		for _, listener := range listeners {
-			listener.Listener(ctx, e)
 		}
 	}
 

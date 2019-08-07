@@ -19,10 +19,10 @@ func New(remoteURL string, options ...Option) *Request {
 	var r Request
 	parsedURL, err := url.Parse(remoteURL)
 	if err != nil {
-		r.Err = err
+		r.Err = ex.New(err)
 		return &r
 	}
-	r.Request = &http.Request{
+	r.Request = http.Request{
 		Method: MethodGet,
 		URL:    parsedURL,
 	}
@@ -37,7 +37,7 @@ func New(remoteURL string, options ...Option) *Request {
 
 // Request is a combination of the http.Request options and the underlying client.
 type Request struct {
-	*http.Request
+	http.Request
 
 	// Err is an error set on construction.
 	// It is checked before sending the request, and will be returned from any of the
@@ -48,8 +48,6 @@ type Request struct {
 	Client *http.Client
 	// Closer is an optional step to run as part of the Close() function.
 	Closer func() error
-	// ResponseBodyInterceptor is an optional custom step to alter the response stream.
-	ResponseBodyInterceptor ReaderInterceptor
 	// Tracer is used to report span contexts to a distributed tracing collector.
 	Tracer Tracer
 	// OnRequest is an array of request lifecycle hooks used for logging.
@@ -59,7 +57,7 @@ type Request struct {
 }
 
 // Do executes the request.
-func (r *Request) Do() (*http.Response, error) {
+func (r Request) Do() (*http.Response, error) {
 	if r.Err != nil {
 		return nil, r.Err
 	}
@@ -76,36 +74,32 @@ func (r *Request) Do() (*http.Response, error) {
 
 	var finisher TraceFinisher
 	if r.Tracer != nil {
-		finisher = r.Tracer.Start(r.Request)
+		finisher = r.Tracer.Start(&r.Request)
 	}
 
 	for _, listener := range r.OnRequest {
-		if err = listener(r.Request); err != nil {
+		if err = listener(&r.Request); err != nil {
 			return nil, err
 		}
 	}
 
 	var res *http.Response
 	if r.Client != nil {
-		res, err = r.Client.Do(r.Request)
+		res, err = r.Client.Do(&r.Request)
 	} else {
-		res, err = http.DefaultClient.Do(r.Request)
+		res, err = http.DefaultClient.Do(&r.Request)
 	}
 	if finisher != nil {
-		finisher.Finish(r.Request, res, started, err)
+		finisher.Finish(&r.Request, res, started, err)
 	}
 	for _, listener := range r.OnResponse {
-		if err = listener(r.Request, res, started, err); err != nil {
+		if err = listener(&r.Request, res, started, err); err != nil {
 			return nil, err
 		}
 	}
 	if err != nil {
 		return nil, err
 	}
-
-	// apply the interceptor if supplied.
-	res.Body = r.responseBody(res)
-
 	return res, nil
 }
 
@@ -131,7 +125,7 @@ func (r *Request) Discard() error {
 }
 
 // DiscardWithResponse reads the response fully and discards all data it reads, and returns the response metadata.
-func (r *Request) DiscardWithResponse() (*http.Response, error) {
+func (r Request) DiscardWithResponse() (*http.Response, error) {
 	defer r.Close()
 
 	res, err := r.Do()
@@ -144,7 +138,7 @@ func (r *Request) DiscardWithResponse() (*http.Response, error) {
 }
 
 // CopyTo copies the response body to a given writer.
-func (r *Request) CopyTo(dst io.Writer) (int64, error) {
+func (r Request) CopyTo(dst io.Writer) (int64, error) {
 	defer r.Close()
 
 	res, err := r.Do()
@@ -160,7 +154,7 @@ func (r *Request) CopyTo(dst io.Writer) (int64, error) {
 }
 
 // Bytes reads the response and returns it as a byte array.
-func (r *Request) Bytes() ([]byte, error) {
+func (r Request) Bytes() ([]byte, error) {
 	defer r.Close()
 
 	res, err := r.Do()
@@ -176,7 +170,7 @@ func (r *Request) Bytes() ([]byte, error) {
 }
 
 // BytesWithResponse reads the response and returns it as a byte array, along with the response metadata..
-func (r *Request) BytesWithResponse() ([]byte, *http.Response, error) {
+func (r Request) BytesWithResponse() ([]byte, *http.Response, error) {
 	defer r.Close()
 
 	res, err := r.Do()
@@ -192,7 +186,7 @@ func (r *Request) BytesWithResponse() ([]byte, *http.Response, error) {
 }
 
 // JSON reads the response as json into a given object.
-func (r *Request) JSON(dst interface{}) error {
+func (r Request) JSON(dst interface{}) error {
 	defer r.Close()
 
 	res, err := r.Do()
@@ -204,7 +198,7 @@ func (r *Request) JSON(dst interface{}) error {
 }
 
 // JSONWithResponse reads the response as json into a given object and returns the response metadata.
-func (r *Request) JSONWithResponse(dst interface{}) (*http.Response, error) {
+func (r Request) JSONWithResponse(dst interface{}) (*http.Response, error) {
 	defer r.Close()
 
 	res, err := r.Do()
@@ -216,7 +210,7 @@ func (r *Request) JSONWithResponse(dst interface{}) (*http.Response, error) {
 }
 
 // XML reads the response as json into a given object.
-func (r *Request) XML(dst interface{}) error {
+func (r Request) XML(dst interface{}) error {
 	defer r.Close()
 
 	res, err := r.Do()
@@ -228,7 +222,7 @@ func (r *Request) XML(dst interface{}) error {
 }
 
 // XMLWithResponse reads the response as json into a given object.
-func (r *Request) XMLWithResponse(dst interface{}) (*http.Response, error) {
+func (r Request) XMLWithResponse(dst interface{}) (*http.Response, error) {
 	defer r.Close()
 
 	res, err := r.Do()
@@ -237,16 +231,4 @@ func (r *Request) XMLWithResponse(dst interface{}) (*http.Response, error) {
 	}
 	defer res.Body.Close()
 	return res, ex.New(xml.NewDecoder(res.Body).Decode(dst))
-}
-
-//
-// utils
-//
-
-// responseBody applies a ResponseBodyInterceptor if it's supplied.
-func (r *Request) responseBody(res *http.Response) io.ReadCloser {
-	if r.ResponseBodyInterceptor != nil {
-		return NewReadCloser(res.Body, r.ResponseBodyInterceptor)
-	}
-	return res.Body
 }

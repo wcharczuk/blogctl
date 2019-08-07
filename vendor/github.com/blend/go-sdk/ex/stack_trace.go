@@ -9,18 +9,18 @@ import (
 	"strings"
 )
 
-// GetStackTrace is a utility method to get the current stack trace at call time.
-func GetStackTrace() string {
-	return fmt.Sprintf("%+v", callers(defaultStartDepth))
+// StackTraceProvider is a type that can return an exception class.
+type StackTraceProvider interface {
+	StackTrace() StackTrace
 }
 
-const (
-	defaultStartDepth = 3
+// GetStackTrace is a utility method to get the current stack trace at call time.
+func GetStackTrace() string {
+	return fmt.Sprintf("%+v", Callers(DefaultStartDepth))
+}
 
-	defaultNewStartDepth = 4
-)
-
-func callers(startDepth int) StackPointers {
+// Callers returns stack pointers.
+func Callers(startDepth int) StackPointers {
 	const depth = 32
 	var pcs [depth]uintptr
 	n := runtime.Callers(startDepth, pcs[:])

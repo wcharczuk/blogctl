@@ -33,8 +33,8 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 func TestEngineBuild(t *testing.T) {
 	assert := assert.New(t)
 
-	config, path, err := config.ReadConfig(&config.PersistentFlags{ConfigPath: ref.String("./testdata/config.yml")})
+	config, path, err := config.ReadConfig(config.PersistentFlags{ConfigPath: ref.String("./testdata/config.yml")})
 	assert.Nil(err)
 	assert.True(strings.HasSuffix(path, "testdata/config.yml"))
-	assert.Nil(New(config).Generate(context.TODO()))
+	assert.Nil(MustNew(OptConfig(config)).Generate(context.TODO()))
 }

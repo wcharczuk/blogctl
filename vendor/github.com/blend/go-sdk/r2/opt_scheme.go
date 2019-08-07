@@ -1,6 +1,8 @@
 package r2
 
-import "net/url"
+import (
+	"net/url"
+)
 
 // OptScheme sets the url scheme.
 func OptScheme(scheme string) Option {

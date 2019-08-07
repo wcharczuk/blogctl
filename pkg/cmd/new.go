@@ -18,7 +18,7 @@ import (
 )
 
 // New returns a new post command.
-func New(flags *config.PersistentFlags) *cobra.Command {
+func New(flags config.PersistentFlags) *cobra.Command {
 	var title, location, posted *string
 	var tags *[]string
 	cmd := &cobra.Command{
@@ -28,7 +28,7 @@ func New(flags *config.PersistentFlags) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			imagePath := args[0]
 
-			cfg, cfgPath, err := engine.ReadConfig(flags)
+			cfg, cfgPath, err := config.ReadConfig(flags)
 			if err != nil {
 				logger.FatalExit(err)
 			}
