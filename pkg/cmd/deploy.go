@@ -66,18 +66,22 @@ func Deploy(flags config.Flags) *cobra.Command {
 				os.Exit(1)
 			}
 
-			if !mgr.DryRun {
-				if !cfg.Cloudfront.IsZero() && len(paths) > 0 {
+			if !cfg.Cloudfront.IsZero() && len(paths) > 0 {
+				if !mgr.DryRun {
 					log.Infof("cloudfront invalidating %d paths", len(paths))
 					if err := cloudfront.InvalidateMany(context.Background(), mgr.Session, cfg.Cloudfront.Distribution, paths...); err != nil {
 						log.Fatal(err)
 						os.Exit(1)
 					}
+				} else {
+					log.Debugf("(dry run) cloudfront invalidating %d files", len(paths))
 				}
-			} else {
-				log.Debugf("dry run; would invalidate %d files", len(paths))
 			}
-			log.Info("complete")
+			if !mgr.DryRun {
+				log.Info("complete")
+			} else {
+				log.Info("(dry run) complete")
+			}
 		},
 	}
 

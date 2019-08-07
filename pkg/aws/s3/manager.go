@@ -146,14 +146,13 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 		}
 
 		if !hasRemoteFile || remoteETag != localETag {
-			logger.MaybeInfof(m.Log, "putting %s", key)
-
 			contentType, err := webutil.DetectContentType(file)
 			if err != nil {
 				return err
 			}
 
 			if !m.DryRun {
+				logger.MaybeInfof(m.Log, "putting %s", key)
 				if err := m.Put(ctx, File{
 					FilePath:    file,
 					Key:         key,
@@ -162,12 +161,18 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 				}); err != nil {
 					return err
 				}
+			} else {
+				logger.MaybeInfof(m.Log, "(dry run) putting %s", key)
 			}
 			if hasRemoteFile {
 				invalidated = append(invalidated, key)
 			}
 		} else {
-			logger.MaybeInfof(m.Log, "skipping %s (unchanged)", key)
+			if !m.DryRun {
+				logger.MaybeInfof(m.Log, "skipping %s (unchanged)", key)
+			} else {
+				logger.MaybeInfof(m.Log, "(dry run) skipping %s (unchanged)", key)
+			}
 		}
 		return nil
 	}, localFiles, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors)).Process(ctx)
@@ -193,11 +198,13 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 		}
 
 		if !localKeys.Has(key) {
-			logger.MaybeInfof(m.Log, "removing remote %s", remoteFile.Key)
 			if !m.DryRun {
+				logger.MaybeInfof(m.Log, "removing remote %s", remoteFile.Key)
 				if err := m.Delete(ctx, bucket, remoteFile.Key); err != nil {
 					return err
 				}
+			} else {
+				logger.MaybeInfof(m.Log, "(dry run) removing remote %s", remoteFile.Key)
 			}
 
 			invalidatedSync.Lock()
