@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/spf13/cobra"
 
 	"github.com/blend/go-sdk/logger"
-	"github.com/spf13/cobra"
+
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"
 )
@@ -22,8 +23,9 @@ func Clean(flags config.PersistentFlags) *cobra.Command {
 			if err != nil {
 				logger.FatalExit(err)
 			}
+
 			log := Logger(cfg, "clean")
-			fmt.Fprintf(log.Logger.Output, banner)
+
 			if configPath != "" {
 				log.Infof("using config path: %s", configPath)
 			}

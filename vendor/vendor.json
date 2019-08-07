@@ -219,6 +219,12 @@
 			"revisionTime": "2019-08-07T01:30:53Z"
 		},
 		{
+			"checksumSHA1": "TUqHYz7fKNIPOaNvG2e3ho/Vx5A=",
+			"path": "github.com/blend/go-sdk/ansi/slant",
+			"revision": "a3b13c9fe1716a40384421f9aceb8553f46619f6",
+			"revisionTime": "2019-08-07T01:30:53Z"
+		},
+		{
 			"checksumSHA1": "1mKop8wjOlHNhPgpio9kiVerJPU=",
 			"path": "github.com/blend/go-sdk/assert",
 			"revision": "a3b13c9fe1716a40384421f9aceb8553f46619f6",
@@ -263,12 +269,6 @@
 		{
 			"checksumSHA1": "O6uLfkfAXlNz9Qe6wsuT5Vo/ujM=",
 			"path": "github.com/blend/go-sdk/fileutil",
-			"revision": "a3b13c9fe1716a40384421f9aceb8553f46619f6",
-			"revisionTime": "2019-08-07T01:30:53Z"
-		},
-		{
-			"checksumSHA1": "x3S5fU2IfiDCNJPLf4jyrnkiXr0=",
-			"path": "github.com/blend/go-sdk/graceful",
 			"revision": "a3b13c9fe1716a40384421f9aceb8553f46619f6",
 			"revisionTime": "2019-08-07T01:30:53Z"
 		},

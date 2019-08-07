@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -23,8 +22,9 @@ func Build(flags config.PersistentFlags) *cobra.Command {
 			if err != nil {
 				logger.FatalExit(err)
 			}
+
 			log := Logger(cfg, "build")
-			fmt.Fprintf(log.Logger.Output, banner)
+
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}

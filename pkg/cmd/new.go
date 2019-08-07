@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/logger"
-	"github.com/spf13/cobra"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/constants"
@@ -32,8 +33,9 @@ func New(flags config.PersistentFlags) *cobra.Command {
 			if err != nil {
 				logger.FatalExit(err)
 			}
+
 			log := Logger(cfg, "new")
-			fmt.Fprintf(log.Logger.Output, banner)
+
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}

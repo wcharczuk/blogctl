@@ -1,15 +1,19 @@
 package cmd
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
+<<<<<<< HEAD
 	"github.com/wcharczuk/blogctl/pkg/config"
+=======
+>>>>>>> 8dddb7c159434e370cea090af81b9822fffc48ad
 
 	"github.com/blend/go-sdk/graceful"
 	"github.com/blend/go-sdk/logger"
 	"github.com/blend/go-sdk/web"
+
+	"github.com/wcharczuk/blogctl/pkg/config"
 )
 
 // Server returns the server command.
@@ -25,8 +29,9 @@ func Server(flags config.PersistentFlags) *cobra.Command {
 			if err != nil {
 				logger.FatalExit(err)
 			}
+
 			log := Logger(cfg, "server")
-			fmt.Fprintf(log.Logger.Output, banner)
+
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}
