@@ -36,12 +36,12 @@ func TestEngineBuild(t *testing.T) {
 
 	os.Chdir("testdata")
 
-	config, path, err := config.ReadConfig(&config.PersistentFlags{
+	cfg, path, err := config.ReadConfig(config.PersistentFlags{
 		ConfigPath:  ref.String("./config.yml"),
 		LoggerFlags: &([]string{}),
 		Parallelism: ref.Int(4),
 	})
 	assert.Nil(err)
 	assert.Equal("./config.yml", path)
-	assert.Nil(MustNew(engine.OptConfig(config)).Generate(context.TODO()))
+	assert.Nil(MustNew(OptConfig(cfg)).Generate(context.TODO()))
 }

@@ -13,7 +13,7 @@ func Logger(cfg config.Config, name string) *logger.Logger {
 	log := logger.MustNew(
 		logger.OptConfig(cfg.Logger),
 		logger.OptText(logger.OptTextHideTimestamp()),
-		logger.OptSubContext("blogctl", name),
+		logger.OptPath("blogctl", name),
 	)
 
 	slant.Print(log.Output, "BLOGCTL")

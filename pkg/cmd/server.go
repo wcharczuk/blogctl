@@ -4,10 +4,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-<<<<<<< HEAD
-	"github.com/wcharczuk/blogctl/pkg/config"
-=======
->>>>>>> 8dddb7c159434e370cea090af81b9822fffc48ad
 
 	"github.com/blend/go-sdk/graceful"
 	"github.com/blend/go-sdk/logger"
