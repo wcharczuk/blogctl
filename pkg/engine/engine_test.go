@@ -29,6 +29,14 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 		},
 	}
 	assert.Equal("2018/12/11/test-slug", e.CreateSlug(slugTemplate, post))
+
+	post = model.Post{
+		Meta: model.Meta{
+			Title:  "Mt. Tam",
+			Posted: time.Date(2018, 12, 11, 10, 9, 8, 7, time.UTC),
+		},
+	}
+	assert.Equal("2018/12/11/mt-tam", e.CreateSlug(slugTemplate, post))
 }
 
 func TestEngineBuild(t *testing.T) {
@@ -38,10 +46,11 @@ func TestEngineBuild(t *testing.T) {
 
 	cfg, path, err := config.ReadConfig(config.Flags{
 		ConfigPath:  ref.String("./config.yml"),
-		LoggerFlags: &([]string{}),
 		Parallelism: ref.Int(4),
 	})
 	assert.Nil(err)
 	assert.Equal("./config.yml", path)
 	assert.Nil(MustNew(OptConfig(cfg)).Generate(context.TODO()))
+
+	// test files???
 }

@@ -19,7 +19,6 @@ import (
 
 	"github.com/wcharczuk/blogctl/pkg/exif"
 	"github.com/wcharczuk/blogctl/pkg/model"
-	"github.com/wcharczuk/blogctl/pkg/stringutil"
 )
 
 // ListDirectory returns all the file infos within a given directory by path.
@@ -116,16 +115,16 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 	}
 
 	if tag, tagErr := exifData.Get(exif.ExposureTime); tagErr == nil {
-		data.ExposureTime = stringutil.StripQuotes(tag.String()) + " sec"
+		data.ExposureTime = StripQuotes(tag.String()) + " sec"
 	}
 	if tag, tagErr := exifData.Get(exif.ISOSpeedRatings); tagErr == nil {
-		data.ISOSpeedRatings = stringutil.StripQuotes(tag.String())
+		data.ISOSpeedRatings = StripQuotes(tag.String())
 	}
 	if tag, tagErr := exifData.Get(exif.Make); tagErr == nil {
-		data.CameraMake = stringutil.StripQuotes(tag.String())
+		data.CameraMake = StripQuotes(tag.String())
 	}
 	if tag, tagErr := exifData.Get(exif.Model); tagErr == nil {
-		data.CameraModel = stringutil.StripQuotes(tag.String())
+		data.CameraModel = StripQuotes(tag.String())
 	}
 	if tag, tagErr := exifData.Get(exif.LensMake); tagErr == nil {
 		data.LensMake = tag.String()
@@ -185,4 +184,12 @@ func WriteYAML(path string, obj interface{}) error {
 func Exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+// StripQuotes strips leading or trailing quotes.
+func StripQuotes(v string) string {
+	v = strings.TrimSpace(v)
+	v = strings.TrimPrefix(v, "\"")
+	v = strings.TrimSuffix(v, "\"")
+	return v
 }

@@ -11,12 +11,12 @@ import (
 	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/logger"
+	"github.com/blend/go-sdk/stringutil"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/constants"
 	"github.com/wcharczuk/blogctl/pkg/engine"
 	"github.com/wcharczuk/blogctl/pkg/model"
-	"github.com/wcharczuk/blogctl/pkg/stringutil"
 )
 
 // New returns a new post command.
