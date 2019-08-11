@@ -126,9 +126,6 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 	if tag, tagErr := exifData.Get(exif.Model); tagErr == nil {
 		data.CameraModel = StripQuotes(tag.String())
 	}
-	if tag, tagErr := exifData.Get(exif.LensMake); tagErr == nil {
-		data.LensMake = StripQuotes(tag.String())
-	}
 	if tag, tagErr := exifData.Get(exif.LensModel); tagErr == nil {
 		data.LensModel = StripQuotes(tag.String())
 	}

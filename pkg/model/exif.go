@@ -4,7 +4,6 @@ package model
 type Exif struct {
 	CameraMake      string `json:"cameraMake" yaml:"cameraMake"`
 	CameraModel     string `json:"cameraModel" yaml:"cameraModel"`
-	LensMake        string `json:"lensMake" yaml:"lensMake"`
 	LensModel       string `json:"lensModel" yaml:"lensModel"`
 	FNumber         string `json:"fNumber" yaml:"fNumber"`
 	ExposureTime    string `json:"exposureTime" yaml:"exposureTime"`
