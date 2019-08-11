@@ -38,6 +38,7 @@ func main() {
 	blogctl.AddCommand(cmd.Clean(flags))
 	blogctl.AddCommand(cmd.Deploy(flags))
 	blogctl.AddCommand(cmd.Server(flags))
+	blogctl.AddCommand(cmd.Slugify(flags))
 
 	if err := blogctl.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)

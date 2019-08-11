@@ -10,16 +10,16 @@ import (
 
 // Post is a single post item.
 type Post struct {
-	OutputPath   string `json:"outputPath" yaml:"outputPath"`
-	Slug         string `json:"slug" yaml:"slug"`
-	TemplatePath string `json:"templatePath" yaml:"templatePath"`
-	Template     *template.Template
-	ImagePath    string `json:"originalPath" yaml:"originalPath"`
+	OutputPath   string `json:"outputPath,omitempty" yaml:"outputPath,omitempty"`
+	Slug         string `json:"slug,omitempty" yaml:"slug,omitempty"`
+	TemplatePath string `json:"templatePath,omitempty" yaml:"templatePath,omitempty"`
+	ImagePath    string `json:"originalPath,omitempty" yaml:"originalPath,omitempty"`
 	Image        Image  `json:"image" yaml:"image"`
 	Meta         Meta   `json:"meta" yaml:"meta"`
 
-	Previous *Post `json:"-" yaml:"-"`
-	Next     *Post `json:"-" yaml:"-"`
+	Template *template.Template `json:"-" yaml:"-"`
+	Previous *Post              `json:"-" yaml:"-"`
+	Next     *Post              `json:"-" yaml:"-"`
 }
 
 // IsZero returns if the post is set.

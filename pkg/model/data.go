@@ -4,11 +4,11 @@ import "time"
 
 // Data is the site's entire database of posts.
 type Data struct {
-	Title   string  `json:"title" yaml:"title"`
-	Author  string  `json:"author" yaml:"author"`
-	BaseURL string  `json:"baseURl" yaml:"baseURL"`
-	Posts   []*Post `json:"posts" yaml:"posts"`
-	Tags    []Tag   `json:"tags" yaml:"tags"`
+	Title   string  `json:"title,omitempty" yaml:"title,omitempty"`
+	Author  string  `json:"author,omitempty" yaml:"author,omitempty"`
+	BaseURL string  `json:"baseURl,omitempty" yaml:"baseURL,omitempty"`
+	Posts   []*Post `json:"posts,omitempty" yaml:"posts,omitempty"`
+	Tags    []Tag   `json:"tags,omitempty" yaml:"tags,omitempty"`
 }
 
 // IsZero returns if the object is set.
