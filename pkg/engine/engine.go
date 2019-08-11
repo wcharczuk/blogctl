@@ -99,8 +99,8 @@ func (e Engine) ParallelismOrDefault() int {
 	return runtime.NumCPU()
 }
 
-// Generate generates the blog to the given output directory.
-func (e Engine) Generate(ctx context.Context) error {
+// Build generates the blog to the given output directory.
+func (e Engine) Build(ctx context.Context) error {
 	if err := e.InitializeOutputPath(); err != nil {
 		return err
 	}
@@ -273,7 +273,7 @@ func (e Engine) Render(ctx context.Context) error {
 	}
 
 	posts := make(chan interface{}, len(renderContext.Data.Posts))
-	batchErrors := make(chan error, 1)
+	batchErrors := make(chan error, len(renderContext.Data.Posts))
 	for _, post := range renderContext.Data.Posts {
 		posts <- post
 	}
@@ -281,14 +281,14 @@ func (e Engine) Render(ctx context.Context) error {
 		post := workItem.(*model.Post)
 
 		var postTemplate *template.Template
-		if post.TextPath != "" {
-			MaybeDebugf(e.Log, "using custom template for post `%s` (%s)", post.TitleOrDefault(), post.TextPath)
-			if post.Template, err = e.CompileTemplate(post.TextPath, renderContext.Partials); err != nil {
+		if post.SourceTextPath != "" {
+			MaybeDebugf(e.Log, "using custom template for post `%s` (%s)", post.TitleOrDefault(), post.SourceTextPath)
+			if post.Template, err = e.CompileTemplate(post.SourceTextPath, renderContext.Partials); err != nil {
 				return ex.New(err)
 			}
 		}
 
-		if post.Image.IsZero() {
+		if post.IsText() {
 			postTemplate = defaultTextPostTemplate
 		} else {
 			postTemplate = defaultImagePostTemplate
@@ -301,7 +301,7 @@ func (e Engine) Render(ctx context.Context) error {
 			return ex.New(err)
 		}
 
-		if err := e.RenderTemplateToFile(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
+		if post.Text, err = e.RenderTemplateToFile(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
 			Config: e.Config,
 			Posts:  renderContext.Data.Posts,
 			Tags:   renderContext.Data.Tags,
@@ -310,13 +310,13 @@ func (e Engine) Render(ctx context.Context) error {
 			return err
 		}
 
-		if post.ImagePath != "" {
+		if post.SourceImagePath != "" {
 			if !e.Config.SkipImageOriginal {
-				if err := e.CopyImageOriginal(ctx, post.ImagePath, slugPath); err != nil {
+				if err := e.CopyImageOriginal(ctx, post.SourceImagePath, slugPath); err != nil {
 					return err
 				}
 			}
-			if err := e.ProcessThumbnails(ctx, post.ImagePath, slugPath); err != nil {
+			if err := e.ProcessThumbnails(ctx, post.SourceImagePath, slugPath); err != nil {
 				return err
 			}
 		}
@@ -339,7 +339,7 @@ func (e Engine) Render(ctx context.Context) error {
 			return err
 		}
 		pageOutputPath := filepath.Join(outputPath, page.Name())
-		if err := e.RenderTemplateToFile(pageTemplate, pageOutputPath, &model.ViewModel{
+		if _, err := e.RenderTemplateToFile(pageTemplate, pageOutputPath, &model.ViewModel{
 			Config: e.Config,
 			Post:   model.Posts(renderContext.Data.Posts).First(),
 			Posts:  renderContext.Data.Posts,
@@ -361,7 +361,7 @@ func (e Engine) Render(ctx context.Context) error {
 				if err := MakeDir(tagPath); err != nil {
 					return ex.New(err)
 				}
-				if err := e.RenderTemplateToFile(tagTemplate, filepath.Join(tagPath, constants.FileIndex), &model.ViewModel{
+				if _, err := e.RenderTemplateToFile(tagTemplate, filepath.Join(tagPath, constants.FileIndex), &model.ViewModel{
 					Config: e.Config,
 					Posts:  renderContext.Data.Posts,
 					Tags:   renderContext.Data.Tags,
@@ -507,21 +507,22 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 
 	for _, fi := range files {
 		name := fi.Name()
+		MaybeDebugf(e.Log, "processing post file %s: %s", path, name)
 		if name == constants.FileMeta {
 			if err := ReadYAML(filepath.Join(path, name), &post.Meta); err != nil {
 				return nil, err
 			}
 		} else if HasExtension(name, constants.ImageExtensions...) && post.Image.IsZero() {
-			post.ImagePath = filepath.Join(path, name)
+			post.SourceImagePath = filepath.Join(path, name)
 
 			if postModTime.Before(fi.ModTime()) {
 				postModTime = fi.ModTime()
 			}
-			if post.Image, err = ReadImage(post.ImagePath); err != nil {
+			if post.Image, err = ReadImage(post.SourceImagePath); err != nil {
 				return nil, err
 			}
-		} else if HasExtension(name, constants.TemplateExtensions...) && post.TextPath == "" {
-			post.TextPath = filepath.Join(path, name)
+		} else if HasExtension(name, constants.TemplateExtensions...) && post.SourceTextPath == "" {
+			post.SourceTextPath = filepath.Join(path, name)
 			if postModTime.Before(fi.ModTime()) {
 				postModTime = fi.ModTime()
 			}
@@ -537,18 +538,13 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 		post.Slug = e.CreateSlug(slugTemplate, post)
 	}
 	if post.IsImage() {
-		post.ImageSizes = e.GetImageSizes(post)
+		post.Image.Paths = e.GetImageSizePaths(post)
 	}
 
-	if post.ImagePath == "" && post.TextPath == "" {
+	if post.SourceImagePath == "" && post.SourceTextPath == "" {
 		return nil, ex.New("no image or text post data found", ex.OptMessage(path))
 	}
 	return &post, nil
-}
-
-// CopyImageOriginal copies the original image to the destination.
-func (e Engine) CopyImageOriginal(ctx context.Context, originalPath, destinationPath string) error {
-	return Copy(originalPath, filepath.Join(destinationPath, constants.FileImageOriginal))
 }
 
 // ProcessThumbnails processes thumbnails.
@@ -673,6 +669,12 @@ func (e Engine) Resize(original image.Image, destination string, maxDimension ui
 	return nil
 }
 
+// CopyImageOriginal copies the original image to the destination.
+func (e Engine) CopyImageOriginal(ctx context.Context, originalPath, destinationPath string) error {
+	MaybeDebugf(e.Log, "copying original image `%s`", destinationPath)
+	return Copy(originalPath, filepath.Join(destinationPath, constants.FileImageOriginal))
+}
+
 // CopyThumbnails copies all thumbnails to the destination path by etag from the thumbnail cache.
 func (e Engine) CopyThumbnails(etag, destinationPath string) error {
 	for _, size := range e.Config.ImageSizesOrDefault() {
@@ -696,16 +698,16 @@ func (e Engine) CopyThumbnail(etag, destinationPath string, size int) error {
 }
 
 // RenderTemplateToFile writes a template to a given path with a given data viewmodel.
-func (e Engine) RenderTemplateToFile(tpl *template.Template, outputPath string, data *model.ViewModel) error {
-	f, err := os.Create(outputPath)
-	if err != nil {
-		return ex.New(err)
+func (e Engine) RenderTemplateToFile(tpl *template.Template, outputPath string, data *model.ViewModel) (string, error) {
+	buffer := new(bytes.Buffer)
+	if err := tpl.Execute(buffer, data); err != nil {
+		return "", ex.New(err)
 	}
-	defer f.Close()
-	if err := tpl.Execute(f, data); err != nil {
-		return ex.New(err)
+	if err := ioutil.WriteFile(outputPath, buffer.Bytes(), 0666); err != nil {
+		return "", ex.New(err)
 	}
-	return nil
+
+	return buffer.String(), nil
 }
 
 // ParseSlugTemplate ensures the slug template
@@ -719,8 +721,8 @@ func (e Engine) CreateSlug(slugTemplate *template.Template, p model.Post) string
 	return output
 }
 
-// GetImageSizes gets the map that corresponds to the image sizes and the image path.
-func (e Engine) GetImageSizes(post model.Post) map[string]string {
+// GetImageSizePaths gets the map that corresponds to the image sizes and the image path.
+func (e Engine) GetImageSizePaths(post model.Post) map[string]string {
 	output := make(map[string]string)
 	if !e.Config.SkipImageOriginal {
 		output["original"] = filepath.Join(post.Slug, constants.FileImageOriginal)

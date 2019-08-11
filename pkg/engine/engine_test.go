@@ -56,7 +56,7 @@ func TestEngineBuild(t *testing.T) {
 	})
 	assert.Nil(err)
 	assert.Equal("./config.yml", path)
-	assert.Nil(MustNew(OptConfig(cfg)).Generate(context.TODO()))
+	assert.Nil(MustNew(OptConfig(cfg)).Build(context.TODO()))
 
 	_, err = os.Stat("dist")
 	assert.Nil(err)
@@ -84,7 +84,7 @@ func TestEngineBuild(t *testing.T) {
 	assert.Nil(json.NewDecoder(f).Decode(&data))
 
 	assert.Len(data.Posts, 2)
-	assert.Len(data.Posts[0].ImageSizes, 4)
-	assert.Empty(data.Posts[1].ImageSizes)
+	assert.Len(data.Posts[0].Image.Paths, 4)
+	assert.Empty(data.Posts[1].Image.Paths)
 	assert.Len(data.Tags, 4)
 }

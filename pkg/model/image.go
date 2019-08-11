@@ -2,9 +2,10 @@ package model
 
 // Image represents a posted image.
 type Image struct {
-	Width  int  `json:"width" yaml:"width"`
-	Height int  `json:"height" yaml:"height"`
-	Exif   Exif `json:"exif" yaml:"exif"`
+	Width  int               `json:"width" yaml:"width"`
+	Height int               `json:"height" yaml:"height"`
+	Exif   Exif              `json:"exif" yaml:"exif"`
+	Paths  map[string]string `json:"paths,omitempty" yaml:"paths,omitempty"`
 }
 
 // IsZero returns if the image has been processed or not.

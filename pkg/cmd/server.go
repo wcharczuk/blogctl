@@ -18,9 +18,8 @@ func Server(flags config.Flags) *cobra.Command {
 	var bindAddr *string
 	var statics *[]string
 	cmd := &cobra.Command{
-		Use:     "server",
-		Aliases: []string{"s", "server"},
-		Short:   "Start a static fileserver",
+		Use:   "server",
+		Short: "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, cfgPath, err := config.ReadConfig(flags)
 			if err != nil {

@@ -13,5 +13,8 @@ func Logger(cfg config.Flags, name string) *logger.Logger {
 		logger.OptText(logger.OptTextHideTimestamp()),
 		logger.OptPath("blogctl", name),
 	)
+	if *cfg.Debug {
+		log.Flags.Enable(logger.Debug)
+	}
 	return log
 }

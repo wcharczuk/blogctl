@@ -23,5 +23,5 @@ func MaybeDebugf(log Logger, format string, args ...interface{}) {
 	if log == nil {
 		return
 	}
-	log.Info(fmt.Sprintf(format, args...))
+	log.Debug(fmt.Sprintf(format, args...))
 }

@@ -15,9 +15,8 @@ import (
 // Clean returns the clean command.
 func Clean(flags config.Flags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "clean",
-		Short:   "Clean the thumbnail cache",
-		Aliases: []string{"c"},
+		Use:   "clean",
+		Short: "Clean caches",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, configPath, err := config.ReadConfig(flags)
 			if err != nil {

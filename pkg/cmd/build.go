@@ -15,9 +15,8 @@ import (
 // Build returns the build command.
 func Build(flags config.Flags) *cobra.Command {
 	return &cobra.Command{
-		Use:     "build",
-		Short:   "Build the photoblog",
-		Aliases: []string{"b", "build", "g", "generate"},
+		Use:   "build",
+		Short: "Build the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, cfgPath, err := config.ReadConfig(flags)
 			if err != nil {
@@ -27,6 +26,7 @@ func Build(flags config.Flags) *cobra.Command {
 			log := Logger(flags, "build")
 			slant.Print(log.Output, "BLOGCTL")
 
+			log.Infof("using logger flags: %v", log.Flags.String())
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}
@@ -36,7 +36,7 @@ func Build(flags config.Flags) *cobra.Command {
 				engine.OptConfig(cfg),
 				engine.OptLog(log),
 				engine.OptParallelism(*flags.Parallelism),
-			).Generate(context.Background()); err != nil {
+			).Build(context.Background()); err != nil {
 				logger.FatalExit(err)
 			}
 			log.Info("complete")

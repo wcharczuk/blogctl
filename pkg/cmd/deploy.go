@@ -18,9 +18,8 @@ import (
 func Deploy(flags config.Flags) *cobra.Command {
 	var bucket, region *string
 	cmd := &cobra.Command{
-		Use:     "deploy",
-		Aliases: []string{"d", "deploy"},
-		Short:   "Deploy the photoblog",
+		Use:   "deploy",
+		Short: "Deploy the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, configPath, err := config.ReadConfig(flags)
 			if err != nil {

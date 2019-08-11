@@ -14,10 +14,11 @@ type Post struct {
 	Slug string `json:"slug,omitempty" yaml:"slug,omitempty"`
 	Meta Meta   `json:"meta" yaml:"meta"`
 
-	TextPath   string            `json:"textPath,omitempty" yaml:"textPath,omitempty"`
-	ImagePath  string            `json:"imagePath,omitempty" yaml:"imagePath,omitempty"`
-	Image      Image             `json:"image,omitempty" yaml:"image,omitempty"`
-	ImageSizes map[string]string `json:"imageSizes" yaml:"imageSizes,omitempty"`
+	Text  string `json:"text,omitempty" yaml:"text,omitempty"`
+	Image Image  `json:"image,omitempty" yaml:"image,omitempty"`
+
+	SourceImagePath string `json:"sourceImagePath,omitempty" yaml:"sourceImagePath,omitempty"`
+	SourceTextPath  string `json:"sourceTextPath,omitempty" yaml:"sourceTextPath,omitempty"`
 
 	Template *template.Template `json:"-" yaml:"-"`
 	Previous *Post              `json:"-" yaml:"-"`
@@ -26,17 +27,17 @@ type Post struct {
 
 // IsZero returns if the post is set.
 func (p Post) IsZero() bool {
-	return p.ImagePath == "" && p.TextPath == ""
+	return p.SourceImagePath == "" && p.SourceTextPath == ""
 }
 
 // IsImage returns if the post is an image post.
 func (p Post) IsImage() bool {
-	return p.ImagePath != ""
+	return p.SourceImagePath != ""
 }
 
 // IsText returns if the post is an text post.
 func (p Post) IsText() bool {
-	return p.TextPath != ""
+	return p.SourceTextPath != ""
 }
 
 // HasPrevious returns if there is a previous post.
@@ -54,33 +55,33 @@ func (p Post) TitleOrDefault() string {
 	return p.Meta.Title
 }
 
-// SlugIndex is a helper that returns the fully qualified path for the post's index.html.
+// IndexPath is a helper that returns the fully qualified path for the post's index.html.
 // It is in the form /Year/Month/Day/Slug/index.html
-func (p Post) SlugIndex() string {
+func (p Post) IndexPath() string {
 	return filepath.Join(p.Slug, constants.FileIndex)
 }
 
-// ImageSourceOriginal returns the fully qualified image source path.
-func (p Post) ImageSourceOriginal() string {
+// ImagePathOriginal returns the fully qualified image source path.
+func (p Post) ImagePathOriginal() string {
 	return filepath.Join(p.Slug, constants.FileImageOriginal)
 }
 
-// ImageSourceForSize returns the image source for a given image size in pixels.
-func (p Post) ImageSourceForSize(size int) string {
+// ImagePathForSize returns the image source for a given image size in pixels.
+func (p Post) ImagePathForSize(size int) string {
 	return filepath.Join(p.Slug, fmt.Sprintf(constants.ImageSizeFormat, size))
 }
 
-// ImageSourceLarge returns the fully qualified image source path.
-func (p Post) ImageSourceLarge() string {
-	return p.ImageSourceForSize(constants.SizeLarge)
+// ImagePathLarge returns the fully qualified image source path.
+func (p Post) ImagePathLarge() string {
+	return p.ImagePathForSize(constants.SizeLarge)
 }
 
-// ImageSourceMedium returns the fully qualified image source path.
-func (p Post) ImageSourceMedium() string {
-	return p.ImageSourceForSize(constants.SizeMedium)
+// ImagePathMedium returns the fully qualified image source path.
+func (p Post) ImagePathMedium() string {
+	return p.ImagePathForSize(constants.SizeMedium)
 }
 
-// ImageSourceSmall returns the fully qualified image source path.
-func (p Post) ImageSourceSmall() string {
-	return p.ImageSourceForSize(constants.SizeSmall)
+// ImagePathSmall returns the fully qualified image source path.
+func (p Post) ImagePathSmall() string {
+	return p.ImagePathForSize(constants.SizeSmall)
 }
