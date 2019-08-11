@@ -54,6 +54,12 @@ func TestEngineBuild(t *testing.T) {
 
 	_, err = os.Stat("dist")
 	assert.Nil(err)
+	_, err = os.Stat("dist/index.html")
+	assert.Nil(err)
+	_, err = os.Stat("dist/data.json")
+	assert.Nil(err)
+	_, err = os.Stat("dist/atom.xml")
+	assert.Nil(err)
 	_, err = os.Stat("dist/2019/02/10/text-post")
 	assert.Nil(err)
 	_, err = os.Stat("dist/2019/02/11/image-post")
