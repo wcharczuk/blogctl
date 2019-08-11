@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/blend/go-sdk/ansi"
@@ -719,13 +720,13 @@ func (e Engine) CreateSlug(slugTemplate *template.Template, p model.Post) string
 }
 
 // GetImageSizes gets the map that corresponds to the image sizes and the image path.
-func (e Engine) GetImageSizes(post model.Post) map[int]string {
-	output := make(map[int]string)
+func (e Engine) GetImageSizes(post model.Post) map[string]string {
+	output := make(map[string]string)
 	if !e.Config.SkipImageOriginal {
-		output[post.Image.LongDimension()] = filepath.Join(post.Slug, constants.FileImageOriginal)
+		output["original"] = filepath.Join(post.Slug, constants.FileImageOriginal)
 	}
 	for _, size := range e.Config.ImageSizesOrDefault() {
-		output[size] = filepath.Join(post.Slug, fmt.Sprintf("%d.jpg", size))
+		output[strconv.Itoa(size)] = filepath.Join(post.Slug, fmt.Sprintf("%d.jpg", size))
 	}
 	return output
 }

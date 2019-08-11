@@ -14,10 +14,10 @@ type Post struct {
 	Slug string `json:"slug,omitempty" yaml:"slug,omitempty"`
 	Meta Meta   `json:"meta" yaml:"meta"`
 
-	TextPath   string         `json:"textPath,omitempty" yaml:"textPath,omitempty"`
-	ImagePath  string         `json:"imagePath,omitempty" yaml:"imagePath,omitempty"`
-	Image      Image          `json:"image,omitempty" yaml:"image,omitempty"`
-	ImageSizes map[int]string `json:"imageSizes" yaml:"imageSizes,omitempty"`
+	TextPath   string            `json:"textPath,omitempty" yaml:"textPath,omitempty"`
+	ImagePath  string            `json:"imagePath,omitempty" yaml:"imagePath,omitempty"`
+	Image      Image             `json:"image,omitempty" yaml:"image,omitempty"`
+	ImageSizes map[string]string `json:"imageSizes" yaml:"imageSizes,omitempty"`
 
 	Template *template.Template `json:"-" yaml:"-"`
 	Previous *Post              `json:"-" yaml:"-"`
