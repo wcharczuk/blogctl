@@ -280,9 +280,9 @@ func (e Engine) Render(ctx context.Context) error {
 		post := workItem.(*model.Post)
 
 		var postTemplate *template.Template
-		if post.TemplatePath != "" {
-			MaybeDebugf(e.Log, "using custom template for post `%s` (%s)", post.TitleOrDefault(), post.TemplatePath)
-			if post.Template, err = e.CompileTemplate(post.TemplatePath, renderContext.Partials); err != nil {
+		if post.TextPath != "" {
+			MaybeDebugf(e.Log, "using custom template for post `%s` (%s)", post.TitleOrDefault(), post.TextPath)
+			if post.Template, err = e.CompileTemplate(post.TextPath, renderContext.Partials); err != nil {
 				return ex.New(err)
 			}
 		}
@@ -498,6 +498,7 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 
 	var post model.Post
 	var postModTime time.Time
+
 	for _, fi := range files {
 		name := fi.Name()
 		if name == constants.FileMeta {
@@ -506,14 +507,15 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 			}
 		} else if HasExtension(name, constants.ImageExtensions...) && post.Image.IsZero() {
 			post.ImagePath = filepath.Join(path, name)
+
 			if postModTime.Before(fi.ModTime()) {
 				postModTime = fi.ModTime()
 			}
 			if post.Image, err = ReadImage(post.ImagePath); err != nil {
 				return nil, err
 			}
-		} else if HasExtension(name, constants.TemplateExtensions...) && post.TemplatePath == "" {
-			post.TemplatePath = filepath.Join(path, name)
+		} else if HasExtension(name, constants.TemplateExtensions...) && post.TextPath == "" {
+			post.TextPath = filepath.Join(path, name)
 			if postModTime.Before(fi.ModTime()) {
 				postModTime = fi.ModTime()
 			}
@@ -521,12 +523,19 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 			MaybeDebugf(e.Log, "ignoring file: %s", name)
 		}
 	}
-	post.Slug = e.CreateSlug(slugTemplate, post)
+
 	if post.Meta.Posted.IsZero() {
 		post.Meta.Posted = postModTime
 	}
-	if post.ImagePath == "" && post.TemplatePath == "" {
-		return nil, ex.New("no image or template found").WithMessage(path)
+	if post.Slug == "" {
+		post.Slug = e.CreateSlug(slugTemplate, post)
+	}
+	if post.IsImage() {
+		post.ImageSizes = e.GetImageSizes(post.Slug)
+	}
+
+	if post.ImagePath == "" && post.TextPath == "" {
+		return nil, ex.New("no image or text post data found", ex.OptMessage(path))
 	}
 	return &post, nil
 }
@@ -696,5 +705,14 @@ func (e *Engine) ParseSlugTemplate() (*template.Template, error) {
 // CreateSlug creates a slug for a post.
 func (e Engine) CreateSlug(slugTemplate *template.Template, p model.Post) string {
 	output, _ := RenderString(slugTemplate, p)
+	return output
+}
+
+// GetImageSizes gets the map that corresponds to the image sizes and the image path.
+func (e Engine) GetImageSizes(slugPath string) map[int]string {
+	output := make(map[int]string)
+	for _, size := range e.Config.ImageSizesOrDefault() {
+		output[size] = filepath.Join(slugPath, fmt.Sprintf("%d.jpg", size))
+	}
 	return output
 }

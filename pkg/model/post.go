@@ -10,12 +10,14 @@ import (
 
 // Post is a single post item.
 type Post struct {
-	OutputPath   string `json:"outputPath,omitempty" yaml:"outputPath,omitempty"`
-	Slug         string `json:"slug,omitempty" yaml:"slug,omitempty"`
-	TemplatePath string `json:"templatePath,omitempty" yaml:"templatePath,omitempty"`
-	ImagePath    string `json:"originalPath,omitempty" yaml:"originalPath,omitempty"`
-	Image        Image  `json:"image" yaml:"image"`
-	Meta         Meta   `json:"meta" yaml:"meta"`
+	Path string `json:"outputPath,omitempty" yaml:"outputPath,omitempty"`
+	Slug string `json:"slug,omitempty" yaml:"slug,omitempty"`
+	Meta Meta   `json:"meta" yaml:"meta"`
+
+	TextPath   string         `json:"textPath,omitempty" yaml:"textPath,omitempty"`
+	ImagePath  string         `json:"imagePath,omitempty" yaml:"imagePath,omitempty"`
+	Image      Image          `json:"image,omitempty" yaml:"image,omitempty"`
+	ImageSizes map[int]string `json:"imageSizes" yaml:"imageSizes,omitempty"`
 
 	Template *template.Template `json:"-" yaml:"-"`
 	Previous *Post              `json:"-" yaml:"-"`
@@ -24,12 +26,17 @@ type Post struct {
 
 // IsZero returns if the post is set.
 func (p Post) IsZero() bool {
-	return p.ImagePath == "" && p.TemplatePath == ""
+	return p.ImagePath == "" && p.TextPath == ""
 }
 
 // IsImage returns if the post is an image post.
 func (p Post) IsImage() bool {
 	return p.ImagePath != ""
+}
+
+// IsText returns if the post is an text post.
+func (p Post) IsText() bool {
+	return p.TextPath != ""
 }
 
 // HasPrevious returns if there is a previous post.

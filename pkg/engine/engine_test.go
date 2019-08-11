@@ -42,7 +42,7 @@ func TestEngineCreateSlugDefaults(t *testing.T) {
 func TestEngineBuild(t *testing.T) {
 	assert := assert.New(t)
 
-	os.Chdir("testdata")
+	assert.Nil(os.Chdir("testdata"))
 
 	cfg, path, err := config.ReadConfig(config.Flags{
 		ConfigPath:  ref.String("./config.yml"),
@@ -52,5 +52,16 @@ func TestEngineBuild(t *testing.T) {
 	assert.Equal("./config.yml", path)
 	assert.Nil(MustNew(OptConfig(cfg)).Generate(context.TODO()))
 
-	// test files???
+	_, err = os.Stat("dist")
+	assert.Nil(err)
+	_, err = os.Stat("dist/2019/02/10/text-post")
+	assert.Nil(err)
+	_, err = os.Stat("dist/2019/02/11/image-post")
+	assert.Nil(err)
+	_, err = os.Stat("dist/2019/02/11/image-post/2048.jpg")
+	assert.Nil(err)
+	_, err = os.Stat("dist/2019/02/11/image-post/1024.jpg")
+	assert.Nil(err)
+	_, err = os.Stat("dist/2019/02/11/image-post/512.jpg")
+	assert.Nil(err)
 }
