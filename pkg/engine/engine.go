@@ -310,6 +310,11 @@ func (e Engine) Render(ctx context.Context) error {
 		}
 
 		if post.ImagePath != "" {
+			if !e.Config.SkipImageOriginal {
+				if err := e.CopyImageOriginal(ctx, post.ImagePath, slugPath); err != nil {
+					return err
+				}
+			}
 			if err := e.ProcessThumbnails(ctx, post.ImagePath, slugPath); err != nil {
 				return err
 			}
@@ -540,6 +545,11 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 	return &post, nil
 }
 
+// CopyImageOriginal copies the original image to the destination.
+func (e Engine) CopyImageOriginal(ctx context.Context, originalPath, destinationPath string) error {
+	return Copy(originalPath, filepath.Join(destinationPath, constants.FileImageOriginal))
+}
+
 // ProcessThumbnails processes thumbnails.
 func (e Engine) ProcessThumbnails(ctx context.Context, originalFilePath, destinationPath string) error {
 	originalContents, err := ioutil.ReadFile(originalFilePath)
@@ -711,6 +721,9 @@ func (e Engine) CreateSlug(slugTemplate *template.Template, p model.Post) string
 // GetImageSizes gets the map that corresponds to the image sizes and the image path.
 func (e Engine) GetImageSizes(post model.Post) map[int]string {
 	output := make(map[int]string)
+	if !e.Config.SkipImageOriginal {
+		output[post.Image.LongDimension()] = filepath.Join(post.Slug, constants.FileImageOriginal)
+	}
 	for _, size := range e.Config.ImageSizesOrDefault() {
 		output[size] = filepath.Join(post.Slug, fmt.Sprintf("%d.jpg", size))
 	}

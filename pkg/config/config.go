@@ -71,6 +71,8 @@ type Config struct {
 
 	// below are knobs you can turn tweak specific things.
 
+	// SkipImageOriginal instructs the engine to not copy the original image.
+	SkipImageOriginal bool `json:"skipImageOriginal,omitempty" yaml:"skipImageOriginal,omitempty"`
 	// SkipTags instructs the engine to not create tag summary pages.
 	SkipTags bool `json:"skipTags,omitempty" yaml:"skipTags,omitempty"`
 	// SkipJSONData instructs the engine not to create a data.json file.

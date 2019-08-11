@@ -45,6 +45,11 @@ func TestEngineBuild(t *testing.T) {
 
 	assert.Nil(os.Chdir("testdata"))
 
+	defer func() {
+		os.Remove("thumbnails")
+		os.Remove("dist")
+	}()
+
 	cfg, path, err := config.ReadConfig(config.Flags{
 		ConfigPath:  ref.String("./config.yml"),
 		Parallelism: ref.Int(4),
@@ -63,6 +68,8 @@ func TestEngineBuild(t *testing.T) {
 	assert.Nil(err)
 	_, err = os.Stat("dist/2019/02/11/image-post")
 	assert.Nil(err)
+	_, err = os.Stat("dist/2019/02/11/image-post/original.jpg")
+	assert.Nil(err)
 	_, err = os.Stat("dist/2019/02/11/image-post/2048.jpg")
 	assert.Nil(err)
 	_, err = os.Stat("dist/2019/02/11/image-post/1024.jpg")
@@ -77,7 +84,7 @@ func TestEngineBuild(t *testing.T) {
 	assert.Nil(json.NewDecoder(f).Decode(&data))
 
 	assert.Len(data.Posts, 2)
-	assert.Len(data.Posts[0].ImageSizes, 3)
+	assert.Len(data.Posts[0].ImageSizes, 4)
 	assert.Empty(data.Posts[1].ImageSizes)
 	assert.Len(data.Tags, 4)
 }
