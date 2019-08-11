@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// AsBool parses a value as an bool.
+// BoolValue parses a value as an bool.
 // If the input error is set it short circuits.
-func AsBool(value string, inputErr error) (output bool, err error) {
+func BoolValue(value string, inputErr error) (output bool, err error) {
 	if inputErr != nil {
 		err = inputErr
 		return
@@ -25,9 +25,9 @@ func AsBool(value string, inputErr error) (output bool, err error) {
 	return
 }
 
-// AsInt parses a value as an int.
+// IntValue parses a value as an int.
 // If the input error is set it short circuits.
-func AsInt(value string, inputErr error) (output int, err error) {
+func IntValue(value string, inputErr error) (output int, err error) {
 	if inputErr != nil {
 		err = inputErr
 		return
@@ -36,9 +36,9 @@ func AsInt(value string, inputErr error) (output int, err error) {
 	return
 }
 
-// AsInt64 parses a value as an int64.
+// Int64Value parses a value as an int64.
 // If the input error is set it short circuits.
-func AsInt64(value string, inputErr error) (output int64, err error) {
+func Int64Value(value string, inputErr error) (output int64, err error) {
 	if inputErr != nil {
 		err = inputErr
 		return
@@ -47,9 +47,9 @@ func AsInt64(value string, inputErr error) (output int64, err error) {
 	return
 }
 
-// AsFloat64 parses a value as an float64.
+// Float64Value parses a value as an float64.
 // If the input error is set it short circuits.
-func AsFloat64(value string, inputErr error) (output float64, err error) {
+func Float64Value(value string, inputErr error) (output float64, err error) {
 	if inputErr != nil {
 		err = inputErr
 		return
@@ -58,9 +58,9 @@ func AsFloat64(value string, inputErr error) (output float64, err error) {
 	return
 }
 
-// AsDuration parses a value as an time.Duration.
+// DurationValue parses a value as an time.Duration.
 // If the input error is set it short circuits.
-func AsDuration(value string, inputErr error) (output time.Duration, err error) {
+func DurationValue(value string, inputErr error) (output time.Duration, err error) {
 	if inputErr != nil {
 		err = inputErr
 		return
@@ -69,13 +69,13 @@ func AsDuration(value string, inputErr error) (output time.Duration, err error) 
 	return
 }
 
-// AsString just returns the string directly from a value error pair.
-func AsString(value string, _ error) string {
+// StringValue just returns the string directly from a value error pair.
+func StringValue(value string, _ error) string {
 	return value
 }
 
-// AsCSV just returns the string directly from a value error pair.
-func AsCSV(value string, err error) ([]string, error) {
+// CSVValue just returns the string directly from a value error pair.
+func CSVValue(value string, err error) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}

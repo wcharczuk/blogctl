@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/blend/go-sdk/assert"
+
 	"github.com/wcharczuk/blogctl/pkg/model"
 )
 
