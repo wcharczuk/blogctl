@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
@@ -58,8 +59,6 @@ func TestEngineBuild(t *testing.T) {
 	assert.Nil(err)
 	_, err = os.Stat("dist/data.json")
 	assert.Nil(err)
-	_, err = os.Stat("dist/atom.xml")
-	assert.Nil(err)
 	_, err = os.Stat("dist/2019/02/10/text-post")
 	assert.Nil(err)
 	_, err = os.Stat("dist/2019/02/11/image-post")
@@ -70,4 +69,15 @@ func TestEngineBuild(t *testing.T) {
 	assert.Nil(err)
 	_, err = os.Stat("dist/2019/02/11/image-post/512.jpg")
 	assert.Nil(err)
+
+	f, err := os.Open("dist/data.json")
+	assert.Nil(err)
+	defer f.Close()
+	var data model.Data
+	assert.Nil(json.NewDecoder(f).Decode(&data))
+
+	assert.Len(data.Posts, 2)
+	assert.Len(data.Posts[0].ImageSizes, 3)
+	assert.Empty(data.Posts[1].ImageSizes)
+	assert.Len(data.Tags, 4)
 }

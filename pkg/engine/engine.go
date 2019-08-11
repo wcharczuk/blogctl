@@ -531,7 +531,7 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 		post.Slug = e.CreateSlug(slugTemplate, post)
 	}
 	if post.IsImage() {
-		post.ImageSizes = e.GetImageSizes(post.Slug)
+		post.ImageSizes = e.GetImageSizes(post)
 	}
 
 	if post.ImagePath == "" && post.TextPath == "" {
@@ -709,10 +709,10 @@ func (e Engine) CreateSlug(slugTemplate *template.Template, p model.Post) string
 }
 
 // GetImageSizes gets the map that corresponds to the image sizes and the image path.
-func (e Engine) GetImageSizes(slugPath string) map[int]string {
+func (e Engine) GetImageSizes(post model.Post) map[int]string {
 	output := make(map[int]string)
 	for _, size := range e.Config.ImageSizesOrDefault() {
-		output[size] = filepath.Join(slugPath, fmt.Sprintf("%d.jpg", size))
+		output[size] = filepath.Join(post.Slug, fmt.Sprintf("%d.jpg", size))
 	}
 	return output
 }
