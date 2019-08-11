@@ -127,10 +127,10 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 		data.CameraModel = StripQuotes(tag.String())
 	}
 	if tag, tagErr := exifData.Get(exif.LensMake); tagErr == nil {
-		data.LensMake = tag.String()
+		data.LensMake = StripQuotes(tag.String())
 	}
 	if tag, tagErr := exifData.Get(exif.LensModel); tagErr == nil {
-		data.LensModel = tag.String()
+		data.LensModel = StripQuotes(tag.String())
 	}
 	return
 }
