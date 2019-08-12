@@ -16,6 +16,7 @@ import (
 // Server returns the server command.
 func Server(flags config.Flags) *cobra.Command {
 	var bindAddr *string
+	var cached *bool
 	var statics *[]string
 	cmd := &cobra.Command{
 		Use:   "server",
@@ -38,13 +39,22 @@ func Server(flags config.Flags) *cobra.Command {
 			if err != nil {
 				logger.FatalExit(err)
 			}
+
 			if len(*statics) > 0 {
 				filePaths := append(*statics, files)
 				log.Infof("using static search paths: %s", strings.Join(filePaths, ", "))
-				app.ServeStatic("/", filePaths)
+				if *cached {
+					app.ServeStaticCached("/", filePaths)
+				} else {
+					app.ServeStatic("/", filePaths)
+				}
 			} else {
 				log.Infof("using static search path: %s", files)
-				app.ServeStatic("/", []string{files})
+				if *cached {
+					app.ServeStaticCached("/", []string{files})
+				} else {
+					app.ServeStatic("/", []string{files})
+				}
 			}
 
 			app.SetStaticRewriteRule("/", "/$", func(filePath string, matchedPieces ...string) string {
@@ -60,5 +70,6 @@ func Server(flags config.Flags) *cobra.Command {
 	}
 	bindAddr = cmd.Flags().String("bind-addr", ":9000", "The bind address for the static webserver.")
 	statics = cmd.Flags().StringArray("static", nil, "Alternate static directories to serve from.")
+	cached = cmd.Flags().Bool("cached", false, "If we should cache static files in memory.")
 	return cmd
 }
