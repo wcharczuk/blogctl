@@ -300,13 +300,17 @@ func (e Engine) Render(ctx context.Context) error {
 
 		outputIndexPath := filepath.Join(slugPath, constants.FileIndex)
 		MaybeDebugf(e.Log, "%s: rendering page", outputIndexPath)
-		if post.Text, err = e.RenderTemplateToFile(postTemplate, outputIndexPath, &model.ViewModel{
+		var postText string
+		if postText, err = e.RenderTemplateToFile(postTemplate, outputIndexPath, &model.ViewModel{
 			Config: e.Config,
 			Posts:  renderContext.Data.Posts,
 			Tags:   renderContext.Data.Tags,
 			Post:   *post,
 		}); err != nil {
 			return err
+		}
+		if post.IsText() {
+			post.Text = postText
 		}
 
 		if post.SourceImagePath != "" {

@@ -157,6 +157,7 @@ func (sc *StaticFileServer) ServeCachedFile(r *Ctx, filepath string) Result {
 		http.Error(r.Response, err.Error(), http.StatusInternalServerError)
 		return nil
 	}
+	println("static cached file", filepath)
 	http.ServeContent(r.Response, r.Request, filepath, file.ModTime, file.Contents)
 	return nil
 }
