@@ -167,7 +167,7 @@ func (e Engine) DiscoverPosts(ctx context.Context) (*model.Data, error) {
 			return nil
 		}
 		if info.IsDir() {
-			MaybeDebugf(e.Log, "reading post `%s`", currentPath)
+			MaybeDebugf(e.Log, "%s: reading post", currentPath)
 
 			// check if we have an image
 			post, err := e.GeneratePost(ctx, slugTemplate, currentPath)
@@ -282,7 +282,6 @@ func (e Engine) Render(ctx context.Context) error {
 
 		var postTemplate *template.Template
 		if post.SourceTextPath != "" {
-			MaybeDebugf(e.Log, "using custom template for post `%s` (%s)", post.TitleOrDefault(), post.SourceTextPath)
 			if post.Template, err = e.CompileTemplate(post.SourceTextPath, renderContext.Partials); err != nil {
 				return ex.New(err)
 			}
@@ -295,13 +294,13 @@ func (e Engine) Render(ctx context.Context) error {
 		}
 
 		slugPath := filepath.Join(outputPath, post.Slug)
-		MaybeDebugf(e.Log, "rendering post `%s`", post.TitleOrDefault())
-
 		if err := MakeDir(slugPath); err != nil {
 			return ex.New(err)
 		}
 
-		if post.Text, err = e.RenderTemplateToFile(postTemplate, filepath.Join(slugPath, constants.FileIndex), &model.ViewModel{
+		outputIndexPath := filepath.Join(slugPath, constants.FileIndex)
+		MaybeDebugf(e.Log, "%s: rendering page", outputIndexPath)
+		if post.Text, err = e.RenderTemplateToFile(postTemplate, outputIndexPath, &model.ViewModel{
 			Config: e.Config,
 			Posts:  renderContext.Data.Posts,
 			Tags:   renderContext.Data.Tags,
@@ -333,12 +332,14 @@ func (e Engine) Render(ctx context.Context) error {
 		return err
 	}
 	for _, page := range pages {
-		MaybeDebugf(e.Log, "rendering page `%s`", page.Name())
-		pageTemplate, err := e.CompileTemplate(filepath.Join(pagesPath, page.Name()), renderContext.Partials)
+		pageSourcePath := filepath.Join(pagesPath, page.Name())
+		pageOutputPath := filepath.Join(outputPath, page.Name())
+
+		MaybeDebugf(e.Log, "%s: rendering page", pageOutputPath)
+		pageTemplate, err := e.CompileTemplate(pageSourcePath, renderContext.Partials)
 		if err != nil {
 			return err
 		}
-		pageOutputPath := filepath.Join(outputPath, page.Name())
 		if _, err := e.RenderTemplateToFile(pageTemplate, pageOutputPath, &model.ViewModel{
 			Config: e.Config,
 			Post:   model.Posts(renderContext.Data.Posts).First(),
@@ -379,7 +380,9 @@ func (e Engine) Render(ctx context.Context) error {
 	}
 
 	if !e.Config.SkipJSONData {
-		if err := e.WriteDataJSON(renderContext.Data, filepath.Join(outputPath, constants.FileData)); err != nil {
+		dataOutputPath := filepath.Join(outputPath, constants.FileData)
+		MaybeDebugf(e.Log, "%s: rendering page", dataOutputPath)
+		if err := e.WriteDataJSON(renderContext.Data, dataOutputPath); err != nil {
 			return err
 		}
 	}
@@ -390,7 +393,7 @@ func (e Engine) Render(ctx context.Context) error {
 // CleanThumbnailCache cleans the thumbnail cache by purging cached thumbnails for posts that may have been deleted.
 func (e Engine) CleanThumbnailCache(ctx context.Context) error {
 	postsPath := e.Config.PostsPathOrDefault()
-	MaybeInfof(e.Log, "searching `%s` for posts", postsPath)
+	MaybeInfof(e.Log, "%s: searching for posts", postsPath)
 	postSums := map[string]bool{}
 	err := filepath.Walk(postsPath, func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -427,7 +430,7 @@ func (e Engine) CleanThumbnailCache(ctx context.Context) error {
 	}
 
 	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
-	MaybeInfof(e.Log, "comparing to `%s` as thumbnail cache", thumbnailCachePath)
+	MaybeInfof(e.Log, "%s: comparing as thumbnail cache", thumbnailCachePath)
 
 	// for each thumbnail cache folder
 	var orphanedCachedPosts []string
@@ -457,9 +460,9 @@ func (e Engine) CleanThumbnailCache(ctx context.Context) error {
 			if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
 				return ex.New(err)
 			}
-			MaybeInfof(e.Log, "purging orphaned cached directory `%s`", path)
+			MaybeInfof(e.Log, "%s: purging orphaned cached directory", path)
 		} else {
-			MaybeInfof(e.Log, "(dry-run) would purge orphaned cached directory `%s`", path)
+			MaybeInfof(e.Log, "%s: (dry-run) would purge orphaned cached directory", path)
 		}
 	}
 
@@ -507,7 +510,6 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 
 	for _, fi := range files {
 		name := fi.Name()
-		MaybeDebugf(e.Log, "processing post file %s: %s", path, name)
 		if name == constants.FileMeta {
 			if err := ReadYAML(filepath.Join(path, name), &post.Meta); err != nil {
 				return nil, err
@@ -527,7 +529,7 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 				postModTime = fi.ModTime()
 			}
 		} else {
-			MaybeDebugf(e.Log, "ignoring file: %s", name)
+			MaybeDebugf(e.Log, "%s: ignoring erroneous post file", filepath.Join(path, name))
 		}
 	}
 
@@ -560,7 +562,7 @@ func (e Engine) ProcessThumbnails(ctx context.Context, originalFilePath, destina
 	}
 
 	if e.ShouldGenerateThumbnails(etag) {
-		if err := e.GenerateThumbnails(originalContents, etag); err != nil {
+		if err := e.GenerateThumbnails(originalContents, originalFilePath, etag); err != nil {
 			return nil
 		}
 	}
@@ -579,7 +581,7 @@ func (e Engine) CompileTemplate(templatePath string, partials []string) (*templa
 		return nil, ex.New(err).WithMessagef("template path: %s", templatePath)
 	}
 
-	tmp := template.New("").Funcs(ViewFuncs())
+	tmp := template.New(templatePath).Funcs(ViewFuncs())
 	for _, partial := range partials {
 		_, err := tmp.Parse(partial)
 		if err != nil {
@@ -607,7 +609,7 @@ func (e Engine) WriteDataJSON(data *model.Data, path string) error {
 // GenerateThumbnails generates and copies our main thumbnails for the post image.
 // - originalContents should be the bytes of the original image file
 // - etag should be the sha sum as an etag, it is used as a path component in the file cache
-func (e Engine) GenerateThumbnails(originalContents []byte, etag string) error {
+func (e Engine) GenerateThumbnails(originalContents []byte, originalImagePath, etag string) error {
 	// decode jpeg into image.Image
 	original, err := jpeg.Decode(bytes.NewBuffer(originalContents))
 	if err != nil {
@@ -615,7 +617,7 @@ func (e Engine) GenerateThumbnails(originalContents []byte, etag string) error {
 	}
 
 	for _, size := range e.Config.ImageSizesOrDefault() {
-		if err := e.GenerateThumbnail(original, size, etag); err != nil {
+		if err := e.GenerateThumbnail(original, size, originalImagePath, etag); err != nil {
 			return err
 		}
 	}
@@ -624,13 +626,13 @@ func (e Engine) GenerateThumbnails(originalContents []byte, etag string) error {
 
 // GenerateThumbnail generates a thumbnail and stores it in the cache if it doesn't exist
 // and copies the cached thumbail to the output directory.
-func (e Engine) GenerateThumbnail(original image.Image, size int, etag string) error {
+func (e Engine) GenerateThumbnail(original image.Image, size int, imagePath, etag string) error {
 	// if the cached version doesnt exist, generate it
 	// copy over the cached version
 	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
 	thumbnailPath := filepath.Join(thumbnailCachePath, etag, fmt.Sprintf("%d.jpg", size))
 	if !Exists(thumbnailPath) {
-		MaybeDebugf(e.Log, "generating cached thumbnail `%s` @ %dpx", etag, size)
+		MaybeDebugf(e.Log, "%s: generating cached thumbnail @ %dpx", imagePath, size)
 		if err := MakeDir(filepath.Join(thumbnailCachePath, etag)); err != nil {
 			return err
 		}
@@ -671,7 +673,7 @@ func (e Engine) Resize(original image.Image, destination string, maxDimension ui
 
 // CopyImageOriginal copies the original image to the destination.
 func (e Engine) CopyImageOriginal(ctx context.Context, originalPath, destinationPath string) error {
-	MaybeDebugf(e.Log, "copying original image `%s`", destinationPath)
+	MaybeDebugf(e.Log, "%s: copying original image", destinationPath)
 	return Copy(originalPath, filepath.Join(destinationPath, constants.FileImageOriginal))
 }
 
@@ -690,7 +692,7 @@ func (e Engine) CopyThumbnail(etag, destinationPath string, size int) error {
 	thumbnailCachePath := e.Config.ThumbnailCachePathOrDefault()
 	thumbnailPath := filepath.Join(thumbnailCachePath, etag, fmt.Sprintf("%d.jpg", size))
 	outputPath := filepath.Join(destinationPath, fmt.Sprintf(constants.ImageSizeFormat, size))
-	MaybeDebugf(e.Log, "copying cached thumbnail `%s` @ %dpx", destinationPath, size)
+	MaybeDebugf(e.Log, "%s: copying cached thumbnail @ %dpx", destinationPath, size)
 	if err := Copy(thumbnailPath, outputPath); err != nil {
 		return err
 	}

@@ -33,6 +33,9 @@ func Server(flags config.Flags) *cobra.Command {
 			if cfgPath != "" {
 				log.Infof("using config path: %s", cfgPath)
 			}
+			if *cached {
+				log.Infof("using cached static file server")
+			}
 
 			files := cfg.OutputPathOrDefault()
 			app, err := web.New(web.OptConfig(cfg.Web), web.OptBindAddr(*bindAddr), web.OptLog(log))

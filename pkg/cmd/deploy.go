@@ -76,11 +76,6 @@ func Deploy(flags config.Flags) *cobra.Command {
 					log.Debugf("(dry run) cloudfront invalidating %d files", len(paths))
 				}
 			}
-			if !mgr.DryRun {
-				log.Info("complete")
-			} else {
-				log.Info("(dry run) complete")
-			}
 		},
 	}
 

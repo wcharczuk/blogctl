@@ -38,7 +38,6 @@ func Clean(flags config.Flags) *cobra.Command {
 			).CleanThumbnailCache(context.Background()); err != nil {
 				logger.FatalExit(err)
 			}
-			log.Info("complete")
 		},
 	}
 	return cmd

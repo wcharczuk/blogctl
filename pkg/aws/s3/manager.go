@@ -120,7 +120,7 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 		if !strings.HasPrefix(key, "/") {
 			key = "/" + key
 		}
-		logger.MaybeDebugf(m.Log, "remote file %s has etag %s", key, remoteFile.ETag)
+		logger.MaybeDebugf(m.Log, "%s: remote file has etag %s", key, remoteFile.ETag)
 		remoteETags[key] = aws.StripQuotes(remoteFile.ETag)
 		remoteFileBatch <- remoteFile
 	}
@@ -140,20 +140,20 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 		var localETag string
 		remoteETag, hasRemoteFile := remoteETags[key]
 		if hasRemoteFile { // if we need to compare against a remote etag
-			logger.MaybeDebugf(m.Log, "generating local file etag for key: %s", key)
+			logger.MaybeDebugf(m.Log, "%s: generating local file etag for key", key)
 			localETag, err = m.GenerateETag(file)
 			if err != nil {
 				return err
 			}
 		} else {
-			logger.MaybeDebugf(m.Log, "missing remote file etag for key: %s", key)
+			logger.MaybeDebugf(m.Log, "%s: missing remote file etag for key", key)
 		}
 
 		if !hasRemoteFile || remoteETag != localETag {
 			if !hasRemoteFile {
-				logger.MaybeDebugf(m.Log, "local file is not present on remote: %s", key)
+				logger.MaybeDebugf(m.Log, "%s: local file is not present on remote", key)
 			} else if hasRemoteFile && remoteETag != localETag {
-				logger.MaybeDebugf(m.Log, "local file has different etag than remote: %s (%s vs. %v)", key, localETag, remoteETag)
+				logger.MaybeDebugf(m.Log, "%s: local file has different etag than remote; %s vs. %v", key, localETag, remoteETag)
 			}
 
 			contentType, err := webutil.DetectContentType(file)
@@ -170,16 +170,16 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 				}); err != nil {
 					return err
 				}
-				logger.MaybeInfof(m.Log, "put %s", key)
+				logger.MaybeInfof(m.Log, "%s: put file to remote", key)
 			} else {
-				logger.MaybeInfof(m.Log, "(dry run) put %s", key)
+				logger.MaybeInfof(m.Log, "%s: (dry run) put file to remote", key)
 			}
 			if hasRemoteFile {
-				logger.MaybeInfof(m.Log, "marking to be invalidated: %s", key)
+				logger.MaybeInfof(m.Log, "%s: marking to be invalidated", key)
 				invalidated = append(invalidated, key)
 			}
 		} else {
-			logger.MaybeDebugf(m.Log, "skipping %s (unchanged)", key)
+			logger.MaybeDebugf(m.Log, "%s: skipping (unchanged)", key)
 		}
 		return nil
 	}, localFiles, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors)).Process(ctx)
@@ -207,19 +207,19 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 
 		if !localKeys.Has(key) {
 			if !m.DryRun {
-				logger.MaybeInfof(m.Log, "removing remote file %s", remoteFile.Key)
+				logger.MaybeInfof(m.Log, "%s: removing remote file", remoteFile.Key)
 				if err := m.Delete(ctx, bucket, remoteFile.Key); err != nil {
 					return err
 				}
 			} else {
-				logger.MaybeInfof(m.Log, "(dry run) removing remote file %s", remoteFile.Key)
+				logger.MaybeInfof(m.Log, "%s: (dry run) removing remote file", remoteFile.Key)
 			}
 
 			invalidatedSync.Lock()
 			invalidated = append(invalidated, key)
 			invalidatedSync.Unlock()
 		} else {
-			logger.MaybeDebugf(m.Log, "keeping remote file %s", remoteFile.Key)
+			logger.MaybeDebugf(m.Log, "%s: keeping remote file", remoteFile.Key)
 		}
 		return nil
 	}, remoteFileBatch, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors)).Process(ctx)

@@ -59,8 +59,6 @@ func Slugify(flags config.Flags) *cobra.Command {
 					log.Infof("(dry run) renamed from %s to %s", from, to)
 				}
 			}
-
-			log.Info("complete")
 		},
 	}
 	return cmd

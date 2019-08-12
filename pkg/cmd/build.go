@@ -39,7 +39,6 @@ func Build(flags config.Flags) *cobra.Command {
 			).Build(context.Background()); err != nil {
 				logger.FatalExit(err)
 			}
-			log.Info("complete")
 		},
 	}
 }
