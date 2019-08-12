@@ -1,7 +1,7 @@
 {{ template "header" . }}
 {{ range $index, $post := .Posts }}
 	<div class="post">
-		<img src="{{ $post.ImageSourceSmall }}" />
+		<img src="{{ $post.ImagePathSmall }}" />
 	</div>
 {{ else }}
 	<h2>No Posts.</h2>
