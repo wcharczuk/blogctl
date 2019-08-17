@@ -12,10 +12,11 @@ type Triggerable interface {
 	Trigger(context.Context, Event)
 }
 
-// SubContexter is a type that can return a subcontext.
-type SubContexter interface {
-	SubContext(string, ...ContextOption) Context
-	WithFields(Fields, ...ContextOption) Context
+// Scoper is a type that can return a scope.
+type Scoper interface {
+	WithContext(context.Context) Scope
+	WithPath(...string) Scope
+	WithFields(Fields) Scope
 }
 
 // Writable is an type that can write events.
@@ -103,7 +104,7 @@ type Errorable interface {
 
 // Log is a logger that implements the full suite of logging methods.
 type Log interface {
-	SubContexter
+	Scoper
 	Triggerable
 	OutputReceiver
 	ErrorOutputReceiver

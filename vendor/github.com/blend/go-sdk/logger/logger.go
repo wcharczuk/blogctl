@@ -16,7 +16,7 @@ func New(options ...Option) (*Logger, error) {
 		RecoverPanics: DefaultRecoverPanics,
 		Flags:         NewFlags(DefaultFlags...),
 	}
-	l.Context = NewContext(l, nil, nil)
+	l.Scope = NewScope(l)
 	var err error
 	for _, option := range options {
 		if err = option(l); err != nil {
@@ -67,7 +67,7 @@ func Prod(options ...Option) *Logger {
 type Logger struct {
 	sync.Mutex
 	*Flags
-	Context
+	Scope
 
 	RecoverPanics bool
 
@@ -182,7 +182,7 @@ func (l *Logger) RemoveListener(flag, listenerName string) {
 // The invocations will be queued in a work queue per listener.
 // There are no order guarantees on when these events will be processed across listeners.
 // This call will not block on the event listeners, but will block on the write.
-func (l *Logger) trigger(ctx context.Context, e Event, sync bool) {
+func (l *Logger) Trigger(ctx context.Context, e Event) {
 	if e == nil {
 		return
 	}
@@ -201,16 +201,10 @@ func (l *Logger) trigger(ctx context.Context, e Event, sync bool) {
 			}
 		}
 		l.Unlock()
-
 		for _, listener := range listeners {
-			if sync {
-				listener.Process(EventWithContext{ctx, e})
-			} else {
-				listener.Work <- EventWithContext{ctx, e}
-			}
+			listener.Work <- EventWithContext{ctx, e}
 		}
 	}
-
 	l.Write(ctx, e)
 }
 
@@ -273,4 +267,10 @@ func (l *Logger) DrainContext(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// EventWithContext is an event with the context it was triggered with.
+type EventWithContext struct {
+	context.Context
+	Event
 }

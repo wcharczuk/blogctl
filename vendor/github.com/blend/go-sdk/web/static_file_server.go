@@ -117,8 +117,6 @@ func (sc *StaticFileServer) ServeFile(r *Ctx, filePath string) Result {
 			http.NotFound(r.Response, r.Request)
 			return nil
 		}
-
-		// otherwise it's a problem w/ the disk
 		if r.DefaultProvider != nil {
 			return r.DefaultProvider.InternalError(err)
 		}
@@ -157,7 +155,6 @@ func (sc *StaticFileServer) ServeCachedFile(r *Ctx, filepath string) Result {
 		http.Error(r.Response, err.Error(), http.StatusInternalServerError)
 		return nil
 	}
-	println("static cached file", filepath)
 	http.ServeContent(r.Response, r.Request, filepath, file.ModTime, file.Contents)
 	return nil
 }

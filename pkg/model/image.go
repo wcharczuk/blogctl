@@ -29,8 +29,8 @@ func (i Image) Ratio() float64 {
 	return float64(i.Width) / float64(i.Height)
 }
 
-// Scaled returns the image dimensions scaled to a given long dimension.
-func (i Image) Scaled(longDimension int) image.Rectangle {
+// Scale returns the image dimensions scaled to a given long dimension.
+func (i Image) Scale(longDimension int) image.Rectangle {
 	scaled := int(float64(longDimension) / i.Ratio())
 	if i.Width > i.Height {
 		return image.Rectangle{

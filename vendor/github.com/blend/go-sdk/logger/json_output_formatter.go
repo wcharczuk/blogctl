@@ -41,6 +41,16 @@ func OptJSONPretty() JSONOutputFormatterOption {
 	return func(jso *JSONOutputFormatter) { jso.Pretty = true }
 }
 
+// OptJSONPrettyPrefix sets the json output formatter to indent output.
+func OptJSONPrettyPrefix(prettyPrefix string) JSONOutputFormatterOption {
+	return func(jso *JSONOutputFormatter) { jso.PrettyPrefix = prettyPrefix }
+}
+
+// OptJSONPrettyIndent sets the json output formatter to indent output.
+func OptJSONPrettyIndent(prettyIndent string) JSONOutputFormatterOption {
+	return func(jso *JSONOutputFormatter) { jso.PrettyIndent = prettyIndent }
+}
+
 // JSONOutputFormatter is a json output formatter.
 type JSONOutputFormatter struct {
 	BufferPool   *bufferutil.Pool
@@ -74,9 +84,31 @@ func (jw JSONOutputFormatter) WriteFormat(ctx context.Context, output io.Writer,
 	if jw.Pretty {
 		encoder.SetIndent(jw.PrettyPrefixOrDefault(), jw.PrettyIndentOrDefault())
 	}
-	if err := encoder.Encode(e); err != nil {
-		return err
+	if decomposer, ok := e.(JSONWritable); ok {
+		fields := CombineFields(GetScopeFields(ctx, e.GetFlag()), decomposer.Decompose())
+		if err := encoder.Encode(fields); err != nil {
+			return err
+		}
+	} else {
+		if err := encoder.Encode(e); err != nil {
+			return err
+		}
 	}
 	_, err := io.Copy(output, buffer)
 	return err
+}
+
+// GetScopeFields gets scope fields from a context.
+func GetScopeFields(ctx context.Context, flag string) map[string]interface{} {
+	output := map[string]interface{}{
+		FieldFlag:      flag,
+		FieldTimestamp: GetTimestamp(ctx),
+	}
+	if path := GetScopePath(ctx); len(path) > 0 {
+		output[FieldScopePath] = path
+	}
+	if fields := GetFields(ctx); len(fields) > 0 {
+		output[FieldFields] = fields
+	}
+	return output
 }
