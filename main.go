@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
+	"github.com/blend/go-sdk/sh"
 	"github.com/spf13/cobra"
 
 	"github.com/wcharczuk/blogctl/pkg/cmd"
@@ -33,15 +31,13 @@ func main() {
 
 	// add commands
 	blogctl.AddCommand(cmd.Init(flags))
-	blogctl.AddCommand(cmd.New(flags))
 	blogctl.AddCommand(cmd.Build(flags))
 	blogctl.AddCommand(cmd.Clean(flags))
 	blogctl.AddCommand(cmd.Deploy(flags))
+	blogctl.AddCommand(cmd.Fix(flags))
+	blogctl.AddCommand(cmd.New(flags))
 	blogctl.AddCommand(cmd.Server(flags))
-	blogctl.AddCommand(cmd.Slugify(flags))
-	blogctl.AddCommand(cmd.Tags(flags))
+	blogctl.AddCommand(cmd.Show(flags))
 
-	if err := blogctl.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-	}
+	sh.Fatal(blogctl.Execute())
 }

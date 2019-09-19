@@ -17,3 +17,12 @@ func (o Tags) Swap(i, j int) {
 func (o Tags) Less(i, j int) bool {
 	return o[i].Tag < o[j].Tag
 }
+
+// TableRows returns the table rows for the given slice of tags.
+func (o Tags) TableRows() []TagTableRow {
+	output := make([]TagTableRow, len(o))
+	for index := range o {
+		output[index] = o[index].TableRow()
+	}
+	return output
+}

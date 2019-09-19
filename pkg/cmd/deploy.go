@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"context"
-	"os"
+	"fmt"
 
 	"github.com/blend/go-sdk/ansi/slant"
-	"github.com/blend/go-sdk/logger"
+	"github.com/blend/go-sdk/sh"
 	"github.com/spf13/cobra"
 
 	"github.com/wcharczuk/blogctl/pkg/aws"
@@ -22,9 +22,7 @@ func Deploy(flags config.Flags) *cobra.Command {
 		Short: "Deploy the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, configPath, err := config.ReadConfig(flags)
-			if err != nil {
-				logger.FatalExit(err)
-			}
+			sh.Fatal(err)
 
 			log := Logger(flags, "deploy")
 			slant.Print(log.Output, "BLOGCTL")
@@ -38,16 +36,14 @@ func Deploy(flags config.Flags) *cobra.Command {
 				*bucket = cfg.S3.Bucket
 			}
 			if *bucket == "" {
-				log.Fatalf("s3 bucket not set in config or in flags, cannot continue (set at `s3 > bucket` in the config or use --bucket)")
-				os.Exit(1)
+				sh.Fatal(fmt.Errorf("s3 bucket not set in config or in flags, cannot continue (set at `s3 > bucket` in the config or use --bucket)"))
 			}
 
 			if *region == "" {
 				*region = cfg.S3.Region
 			}
 			if *region == "" {
-				log.Fatalf("s3 region not set in config or in flags, cannot continue (set at `s3 > region` in the config or use --region)")
-				os.Exit(1)
+				sh.Fatal(fmt.Errorf("s3 region not set in config or in flags, cannot continue (set at `s3 > region` in the config or use --region)"))
 			}
 
 			mgr := s3.New(&aws.Config{
@@ -60,17 +56,13 @@ func Deploy(flags config.Flags) *cobra.Command {
 				ACL: s3.ACLPublicRead,
 			}
 			paths, err := mgr.SyncDirectory(context.Background(), cfg.OutputPathOrDefault(), *bucket)
-			if err != nil {
-				log.Fatal(err)
-				os.Exit(1)
-			}
+			sh.Fatal(err)
 
 			if !cfg.Cloudfront.IsZero() && len(paths) > 0 {
 				if !mgr.DryRun {
 					log.Infof("cloudfront invalidating %d paths", len(paths))
 					if err := cloudfront.InvalidateMany(context.Background(), mgr.Session, cfg.Cloudfront.Distribution, paths...); err != nil {
-						log.Fatal(err)
-						os.Exit(1)
+						sh.Fatal(err)
 					}
 				} else {
 					log.Debugf("(dry run) cloudfront invalidating %d files", len(paths))

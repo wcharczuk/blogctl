@@ -26,3 +26,12 @@ func (p Posts) Swap(i, j int) {
 func (p Posts) Less(i, j int) bool {
 	return p[i].Meta.Posted.After(p[j].Meta.Posted)
 }
+
+// TableRows returns table rows for the given slice of posts.
+func (p Posts) TableRows() []PostTableRow {
+	output := make([]PostTableRow, len(p))
+	for index := range p {
+		output[index] = p[index].TableRow()
+	}
+	return output
+}

@@ -25,6 +25,14 @@ type Post struct {
 	Next     *Post              `json:"-" yaml:"-"`
 }
 
+// PostType returns a string version of the post type.
+func (p Post) PostType() string {
+	if p.IsText() {
+		return "text"
+	}
+	return "image"
+}
+
 // IsZero returns if the post is set.
 func (p Post) IsZero() bool {
 	return p.SourceImagePath == "" && p.SourceTextPath == ""
@@ -84,4 +92,15 @@ func (p Post) ImagePathMedium() string {
 // ImagePathSmall returns the fully qualified image source path.
 func (p Post) ImagePathSmall() string {
 	return p.ImagePathForSize(constants.SizeSmall)
+}
+
+// TableRow returns a post as an ansi table row.
+func (p Post) TableRow() PostTableRow {
+	return PostTableRow{
+		Title:    p.Meta.Title,
+		Location: p.Meta.Location,
+		Posted:   p.Meta.Posted,
+		Slug:     p.Slug,
+		PostType: p.PostType(),
+	}
 }

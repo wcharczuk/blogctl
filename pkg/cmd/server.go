@@ -7,7 +7,7 @@ import (
 
 	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/graceful"
-	"github.com/blend/go-sdk/logger"
+	"github.com/blend/go-sdk/sh"
 	"github.com/blend/go-sdk/web"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
@@ -23,9 +23,7 @@ func Server(flags config.Flags) *cobra.Command {
 		Short: "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, cfgPath, err := config.ReadConfig(flags)
-			if err != nil {
-				logger.FatalExit(err)
-			}
+			sh.Fatal(err)
 
 			log := Logger(flags, "server")
 			slant.Print(log.Output, "BLOGCTL")
@@ -39,9 +37,7 @@ func Server(flags config.Flags) *cobra.Command {
 
 			files := cfg.OutputPathOrDefault()
 			app, err := web.New(web.OptConfig(cfg.Web), web.OptBindAddr(*bindAddr), web.OptLog(log))
-			if err != nil {
-				logger.FatalExit(err)
-			}
+			sh.Fatal(err)
 
 			if len(*statics) > 0 {
 				filePaths := append(*statics, files)
@@ -67,7 +63,7 @@ func Server(flags config.Flags) *cobra.Command {
 				return filePath
 			})
 			if err := graceful.Shutdown(app); err != nil {
-				logger.FatalExit(err)
+				sh.Fatal(err)
 			}
 		},
 	}

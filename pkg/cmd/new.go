@@ -2,15 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/blend/go-sdk/ansi/slant"
-	"github.com/blend/go-sdk/ex"
-	"github.com/blend/go-sdk/logger"
+	"github.com/blend/go-sdk/sh"
 	"github.com/blend/go-sdk/stringutil"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
@@ -31,9 +29,7 @@ func New(flags config.Flags) *cobra.Command {
 			imagePath := args[0]
 
 			cfg, cfgPath, err := config.ReadConfig(flags)
-			if err != nil {
-				logger.FatalExit(err)
-			}
+			sh.Fatal(err)
 
 			log := Logger(flags, "new")
 			slant.Print(log.Output, "BLOGCTL")
@@ -45,14 +41,10 @@ func New(flags config.Flags) *cobra.Command {
 			var postedDate time.Time
 			if *posted != "" {
 				postedDate, err = time.Parse("2006-01-02", *posted)
-				if err != nil {
-					logger.FatalExit(ex.New(err))
-				}
+				sh.Fatal(err)
 			} else {
 				postedDate, err = engine.ExtractCaptureDate(imagePath)
-				if err != nil {
-					logger.FatalExit(err)
-				}
+				sh.Fatal(err)
 			}
 
 			if *title == "" {
@@ -61,13 +53,9 @@ func New(flags config.Flags) *cobra.Command {
 
 			path := fmt.Sprintf("%s/%s-%s", cfg.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
 			log.Infof("writing new post to %s", path)
-			if err := engine.MakeDir(path); err != nil {
-				log.Fatal(err)
-				os.Exit(1)
-			}
+			sh.Fatal(err)
 			if err := engine.Copy(imagePath, filepath.Join(path, filepath.Base(imagePath))); err != nil {
-				log.Fatal(err)
-				os.Exit(1)
+				sh.Fatal(err)
 			}
 
 			var metaTags []string
@@ -81,8 +69,7 @@ func New(flags config.Flags) *cobra.Command {
 				Tags:     metaTags,
 			}
 			if err := engine.WriteYAML(filepath.Join(path, constants.FileMeta), meta); err != nil {
-				log.Fatal(err)
-				os.Exit(1)
+				sh.Fatal(err)
 			}
 		},
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/blend/go-sdk/ansi/slant"
-	"github.com/blend/go-sdk/logger"
+	"github.com/blend/go-sdk/sh"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"
@@ -19,9 +19,7 @@ func Build(flags config.Flags) *cobra.Command {
 		Short: "Build the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, cfgPath, err := config.ReadConfig(flags)
-			if err != nil {
-				logger.FatalExit(err)
-			}
+			sh.Fatal(err)
 
 			log := Logger(flags, "build")
 			slant.Print(log.Output, "BLOGCTL")
@@ -37,7 +35,7 @@ func Build(flags config.Flags) *cobra.Command {
 				engine.OptLog(log),
 				engine.OptParallelism(*flags.Parallelism),
 			).Build(context.Background()); err != nil {
-				logger.FatalExit(err)
+				sh.Fatal(err)
 			}
 		},
 	}
