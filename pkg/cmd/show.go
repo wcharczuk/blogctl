@@ -128,9 +128,9 @@ func Show(flags config.Flags) *cobra.Command {
 				}
 			case "posts":
 				if *tagsOrderDesc {
-					sort.Slice(posts.Tags, func(i, j int) bool { return len(posts.Tags[i].Posts) < len(posts.Tags[j].Posts) })
-				} else {
 					sort.Slice(posts.Tags, func(i, j int) bool { return len(posts.Tags[i].Posts) > len(posts.Tags[j].Posts) })
+				} else {
+					sort.Slice(posts.Tags, func(i, j int) bool { return len(posts.Tags[i].Posts) < len(posts.Tags[j].Posts) })
 				}
 			}
 
