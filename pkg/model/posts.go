@@ -1,5 +1,7 @@
 package model
 
+import "github.com/blend/go-sdk/selector"
+
 // Posts is a list of posts.
 type Posts []*Post
 
@@ -32,6 +34,17 @@ func (p Posts) TableRows() []PostTableRow {
 	output := make([]PostTableRow, len(p))
 	for index := range p {
 		output[index] = p[index].TableRow()
+	}
+	return output
+}
+
+// FilterBySelector filters the posts by a selector.
+func (p Posts) FilterBySelector(sel selector.Selector) []*Post {
+	var output []*Post
+	for _, post := range p {
+		if sel.Matches(post.Labels()) {
+			output = append(output, post)
+		}
 	}
 	return output
 }

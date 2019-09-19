@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/blend/go-sdk/selector"
+
 	"github.com/spf13/cobra"
 
 	"github.com/blend/go-sdk/ansi"
@@ -29,7 +31,7 @@ func Show(flags config.Flags) *cobra.Command {
 	}
 	outputFormat = cmd.PersistentFlags().StringP("output", "o", "name", "The output format; one of `name`, `table`, `json`, `yaml`")
 
-	var postsOrderBy *string
+	var postsOrderBy, postsSelector *string
 	var postsOrderDesc *bool
 	posts := &cobra.Command{
 		Use:   "posts",
@@ -45,6 +47,12 @@ func Show(flags config.Flags) *cobra.Command {
 
 			posts, err := e.DiscoverPosts(context.Background())
 			sh.Fatal(err)
+
+			if *postsSelector != "" {
+				sel, err := selector.Parse(*postsSelector)
+				sh.Fatal(err)
+				posts.Posts = model.Posts(posts.Posts).FilterBySelector(sel)
+			}
 
 			switch strings.ToLower(*postsOrderBy) {
 			case "location":
@@ -91,6 +99,7 @@ func Show(flags config.Flags) *cobra.Command {
 			}
 		},
 	}
+	postsSelector = posts.Flags().StringP("labels", "l", "", "Filter posts with a given label selector")
 	postsOrderBy = posts.Flags().String("order-by", "title", "Which field to order the posts by; one of `location`, `posted`, `slug`, or `title`")
 	postsOrderDesc = posts.Flags().Bool("desc", false, "The posts sort order (true will sort descending)")
 

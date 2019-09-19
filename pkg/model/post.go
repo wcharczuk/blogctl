@@ -25,6 +25,20 @@ type Post struct {
 	Next     *Post              `json:"-" yaml:"-"`
 }
 
+// Labels returns labels use for filtering with a selector.
+func (p Post) Labels() map[string]string {
+	output := map[string]string{
+		"title":    p.Meta.Title,
+		"location": p.Meta.Location,
+		"slug":     p.Slug,
+		"postType": p.PostType(),
+	}
+	for _, tag := range p.Meta.Tags {
+		output[tag] = "tagged"
+	}
+	return output
+}
+
 // PostType returns a string version of the post type.
 func (p Post) PostType() string {
 	if p.IsText() {

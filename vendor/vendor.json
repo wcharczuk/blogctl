@@ -315,6 +315,12 @@
 			"revisionTime": "2019-08-16T23:48:48Z"
 		},
 		{
+			"checksumSHA1": "uDdYsK8NUJP6geQFD5FQlA0pWUE=",
+			"path": "github.com/blend/go-sdk/selector",
+			"revision": "809fbeb98c2b3ce7e716ed3509f3cc47ab1d7cb9",
+			"revisionTime": "2019-09-14T20:39:42Z"
+		},
+		{
 			"checksumSHA1": "oExKny/QCb+OIU9x0b8StyOH/L4=",
 			"path": "github.com/blend/go-sdk/semver",
 			"revision": "e71095add5e47a6007bd77f6d232427797abee32",
