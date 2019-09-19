@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"path/filepath"
+	"strings"
 
 	"github.com/wcharczuk/blogctl/pkg/constants"
 )
@@ -115,6 +116,7 @@ func (p Post) TableRow() PostTableRow {
 		Location: p.Meta.Location,
 		Posted:   p.Meta.Posted,
 		Slug:     p.Slug,
+		Tags:     strings.Join(p.Meta.Tags, ", "),
 		PostType: p.PostType(),
 	}
 }

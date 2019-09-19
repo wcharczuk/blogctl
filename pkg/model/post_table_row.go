@@ -7,6 +7,7 @@ type PostTableRow struct {
 	Title    string
 	Location string
 	Posted   time.Time
+	Tags     string
 	Slug     string
 	PostType string
 }
