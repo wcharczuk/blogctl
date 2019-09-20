@@ -115,9 +115,9 @@ func (tf TextOutputFormatter) FormatPath(path ...string) string {
 	return fmt.Sprintf("[%s]", strings.Join(path, " > "))
 }
 
-// FormatFields returns the scope fields section of the message as a string.
-func (tf TextOutputFormatter) FormatFields(fields Fields) string {
-	return FormatFields(tf, ansi.ColorBlue, fields)
+// FormatLabels returns the scope labels section of the message as a string.
+func (tf TextOutputFormatter) FormatLabels(labels Labels) string {
+	return FormatLabels(tf, ansi.ColorBlue, labels)
 }
 
 // WriteFormat implements write formatter.
@@ -126,11 +126,11 @@ func (tf TextOutputFormatter) WriteFormat(ctx context.Context, output io.Writer,
 	defer tf.BufferPool.Put(buffer)
 
 	if !tf.HideTimestamp {
-		buffer.WriteString(tf.FormatTimestamp(GetTimestamp(ctx)))
+		buffer.WriteString(tf.FormatTimestamp(GetEventTimestamp(ctx, e)))
 		buffer.WriteString(Space)
 	}
 
-	scopePath := GetScopePath(ctx)
+	scopePath := GetPath(ctx)
 	if scopePath != nil {
 		buffer.WriteString(tf.FormatPath(scopePath...))
 		buffer.WriteString(Space)
@@ -145,10 +145,10 @@ func (tf TextOutputFormatter) WriteFormat(ctx context.Context, output io.Writer,
 		buffer.WriteString(stringer.String())
 	}
 
-	fields := GetFields(ctx)
-	if len(fields) > 0 {
+	labels := GetLabels(ctx)
+	if len(labels) > 0 {
 		buffer.WriteString("\t")
-		buffer.WriteString(tf.FormatFields(fields))
+		buffer.WriteString(tf.FormatLabels(labels))
 	}
 
 	buffer.WriteString(Newline)

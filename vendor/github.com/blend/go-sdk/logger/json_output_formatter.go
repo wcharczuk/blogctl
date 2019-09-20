@@ -85,7 +85,7 @@ func (jw JSONOutputFormatter) WriteFormat(ctx context.Context, output io.Writer,
 		encoder.SetIndent(jw.PrettyPrefixOrDefault(), jw.PrettyIndentOrDefault())
 	}
 	if decomposer, ok := e.(JSONWritable); ok {
-		fields := CombineFields(GetScopeFields(ctx, e.GetFlag()), decomposer.Decompose())
+		fields := jw.CombineFields(jw.GetScopeFields(ctx, e), decomposer.Decompose())
 		if err := encoder.Encode(fields); err != nil {
 			return err
 		}
@@ -98,17 +98,37 @@ func (jw JSONOutputFormatter) WriteFormat(ctx context.Context, output io.Writer,
 	return err
 }
 
-// GetScopeFields gets scope fields from a context.
-func GetScopeFields(ctx context.Context, flag string) map[string]interface{} {
-	output := map[string]interface{}{
-		FieldFlag:      flag,
-		FieldTimestamp: GetTimestamp(ctx),
+// CombineFields combines a variadic set of fields.
+func (jw JSONOutputFormatter) CombineFields(fields ...map[string]interface{}) map[string]interface{} {
+	if len(fields) == 0 {
+		return nil
 	}
-	if path := GetScopePath(ctx); len(path) > 0 {
+	output := make(map[string]interface{})
+	for _, set := range fields {
+		if set == nil {
+			continue
+		}
+		for key, value := range set {
+			output[key] = value
+		}
+	}
+	return output
+}
+
+// GetScopeFields gets scope fields from a context.
+func (jw JSONOutputFormatter) GetScopeFields(ctx context.Context, e Event) map[string]interface{} {
+	output := map[string]interface{}{
+		FieldFlag:      e.GetFlag(),
+		FieldTimestamp: GetEventTimestamp(ctx, e),
+	}
+	if path := GetPath(ctx); len(path) > 0 {
 		output[FieldScopePath] = path
 	}
-	if fields := GetFields(ctx); len(fields) > 0 {
-		output[FieldFields] = fields
+	if labels := GetLabels(ctx); len(labels) > 0 {
+		output[FieldLabels] = labels
+	}
+	if annotations := GetAnnotations(ctx); len(annotations) > 0 {
+		output[FieldAnnotations] = annotations
 	}
 	return output
 }

@@ -53,7 +53,7 @@ func Fix(flags config.Flags) *cobra.Command {
 					sh.Fatal(err)
 					err = os.Rename(temp, to)
 					sh.Fatal(err)
-					log.Infof("(dry run) renamed from %s to %s", from, to)
+					log.Infof("renamed from %s to %s", from, to)
 				}
 			}
 		},
