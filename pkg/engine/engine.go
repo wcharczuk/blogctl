@@ -102,16 +102,16 @@ func (e Engine) ParallelismOrDefault() int {
 
 // Build generates the blog to the given output directory.
 func (e Engine) Build(ctx context.Context) error {
+	renderContext, err := e.BuildRenderContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	if err := e.InitializeOutputPath(); err != nil {
 		return err
 	}
 
 	if err := e.InitializeThumbnailCache(); err != nil {
-		return err
-	}
-
-	renderContext, err := e.BuildRenderContext(ctx)
-	if err != nil {
 		return err
 	}
 
