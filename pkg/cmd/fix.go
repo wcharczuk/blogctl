@@ -45,15 +45,17 @@ func Fix(flags config.Flags) *cobra.Command {
 				from = filepath.Join(postsPath, object.Name())
 				to = filepath.Join(postsPath, stringutil.Slugify(object.Name()))
 
-				if flags.DryRun != nil && *flags.DryRun {
-					log.Infof("(dry run) would rename from %s to %s", from, to)
-				} else {
-					temp = filepath.Join(postsPath, uuid.V4().String())
-					err = os.Rename(from, temp)
-					sh.Fatal(err)
-					err = os.Rename(temp, to)
-					sh.Fatal(err)
-					log.Infof("renamed from %s to %s", from, to)
+				if from != to {
+					if flags.DryRun != nil && *flags.DryRun {
+						log.Infof("(dry run) would rename from %s to %s", from, to)
+					} else {
+						temp = filepath.Join(postsPath, uuid.V4().String())
+						err = os.Rename(from, temp)
+						sh.Fatal(err)
+						err = os.Rename(temp, to)
+						sh.Fatal(err)
+						log.Infof("renamed from %s to %s", from, to)
+					}
 				}
 			}
 		},
