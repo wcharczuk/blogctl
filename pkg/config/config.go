@@ -26,6 +26,9 @@ type Config struct {
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 	// BaseURL is the base url for the blog.
 	BaseURL string `json:"baseURL,omitempty" yaml:"baseURL,omitempty"`
+
+	// resouce paths
+
 	// PostsPath is the path to the posts to compile.
 	PostsPath string `json:"postsPath,omitempty" yaml:"postsPath,omitempty"`
 	// PagesPath is the path to a folder with pages to compile.
@@ -40,6 +43,7 @@ type Config struct {
 	StaticsPath string `json:"staticsPath,omitempty" yaml:"staticsPath,omitempty"`
 	// ThumbnailCachePath is the path to the thumbnail cache.
 	ThumbnailCachePath string `json:"thumbnailCachePath,omitempty" yaml:"thumbnailCachePath,omitempty"`
+
 	// SlugTemplate is the template for post slugs.
 	// It defaults to "/{{ .Meta.Posted.Year }}/{{ .Meta.Posted.Month }}/{{ .Meta.Posted.Day }}/{{ .Meta.Title | slugify }}/"
 	SlugTemplate string `json:"slugTemplate,omitempty" yaml:"slugTemplate,omitempty"`
@@ -56,9 +60,7 @@ type Config struct {
 	// This defaults to 2048px, 1024px, and 512px.
 	ImageSizes []int `json:"imageSizes,omitempty" yaml:"imageSizes,omitempty"`
 	// Extra is optional and allows you to provide variables for templates.
-	Extra Extra `json:"extra,omitempty" yaml:"extra,omitempty"`
-
-	// module configs
+	Extra map[string]string `json:"extra,omitempty" yaml:"extra,omitempty"`
 
 	// S3 governs how the blog is deployed.
 	S3 S3 `json:"s3,omitempty" yaml:"s3,omitempty"`
@@ -71,12 +73,16 @@ type Config struct {
 
 	// below are knobs you can turn tweak specific things.
 
+	// PostSortKey is the key that you can use to sort posts in the feed by.
+	PostSortKey string `json:"postSortKey,omitempty" yaml:"postSortKey,omitempty"`
+	// PostSortAscending determines if we should sort ascending or descending.
+	PostSortAscending *bool `json:"postSortAscending,omitempty" yaml:"postSortAscending,omitempty"`
 	// SkipImageOriginal instructs the engine to not copy the original image.
-	SkipImageOriginal bool `json:"skipImageOriginal,omitempty" yaml:"skipImageOriginal,omitempty"`
+	SkipCopyOriginalImage bool `json:"skipImageOriginal,omitempty" yaml:"skipImageOriginal,omitempty"`
 	// SkipTags instructs the engine to not create tag summary pages.
-	SkipTags bool `json:"skipTags,omitempty" yaml:"skipTags,omitempty"`
-	// SkipJSONData instructs the engine not to create a data.json file.
-	SkipJSONData bool `json:"skipJSONData,omitempty" yaml:"skipJSONData,omitempty"`
+	SkipGenerateTags bool `json:"skipGenerateTags,omitempty" yaml:"skipGenerateTags,omitempty"`
+	// SkipGenerateJSONData instructs the engine not to create a data.json file.
+	SkipGenerateJSONData bool `json:"skipGenerateJSONData,omitempty" yaml:"skipGenerateJSONData,omitempty"`
 }
 
 // Fields returns fields to prompt for when creating a new config.
@@ -95,6 +101,7 @@ func (c *Config) Fields() []Field {
 		{Prompt: "Text Post Template Path (template file to use for text posts)", FieldReference: &c.TextPostTemplatePath, Default: constants.DefaultTextPostTemplatePath},
 		{Prompt: "Tag Template Path (template file to use for each tag)", FieldReference: &c.TagTemplatePath, Default: constants.DefaultTagTemplatePath},
 		{Prompt: "Thumbnail Cache Path (resized image cache path)", FieldReference: &c.ThumbnailCachePath, Default: constants.DefaultThumbnailCachePath},
+		{Prompt: "Posts Sort Key (what to sort images by)", FieldReference: &c.PostSortKey, Default: constants.PostSortKeyCapture},
 	}
 }
 
@@ -199,4 +206,20 @@ func (c Config) ImageSizesOrDefault() []int {
 		return c.ImageSizes
 	}
 	return constants.DefaultImageSizes
+}
+
+// PostSortKeyOrDefault returns the post sort key or a default.
+func (c Config) PostSortKeyOrDefault() string {
+	if c.PostSortKey != "" {
+		return c.PostSortKey
+	}
+	return constants.PostSortKeyCapture
+}
+
+// PostSortAscendingOrDefault returns the post sort direction or a default.
+func (c Config) PostSortAscendingOrDefault() bool {
+	if c.PostSortAscending != nil {
+		return *c.PostSortAscending
+	}
+	return false
 }

@@ -11,9 +11,10 @@ import (
 
 // Post is a single post item.
 type Post struct {
-	Path string `json:"outputPath,omitempty" yaml:"outputPath,omitempty"`
-	Slug string `json:"slug,omitempty" yaml:"slug,omitempty"`
-	Meta Meta   `json:"meta" yaml:"meta"`
+	Path  string `json:"outputPath,omitempty" yaml:"outputPath,omitempty"`
+	Slug  string `json:"slug,omitempty" yaml:"slug,omitempty"`
+	Index int    `json:"index" yaml:"index"`
+	Meta  Meta   `json:"meta" yaml:"meta"`
 
 	Text  string `json:"text,omitempty" yaml:"text,omitempty"`
 	Image Image  `json:"image,omitempty" yaml:"image,omitempty"`

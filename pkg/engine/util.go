@@ -129,6 +129,9 @@ func GetExifData(exifData *exif.Exif) (data model.Exif, err error) {
 	if tag, tagErr := exifData.Get(exif.LensModel); tagErr == nil {
 		data.LensModel = StripQuotes(tag.String())
 	}
+
+	// date time ...
+	data.CaptureDate, _ = exifData.DateTime()
 	return
 }
 

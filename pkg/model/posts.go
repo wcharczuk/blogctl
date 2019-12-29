@@ -1,6 +1,9 @@
 package model
 
-import "github.com/blend/go-sdk/selector"
+import (
+	"github.com/blend/go-sdk/selector"
+	"github.com/wcharczuk/blogctl/pkg/constants"
+)
 
 // Posts is a list of posts.
 type Posts []*Post
@@ -12,21 +15,6 @@ func (p Posts) First() (output Post) {
 		output = *p[0]
 	}
 	return
-}
-
-// Len implements sorter.
-func (p Posts) Len() int {
-	return len(p)
-}
-
-// Swap implements sorter.
-func (p Posts) Swap(i, j int) {
-	p[i], p[j] = p[j], p[i]
-}
-
-// Less implements sorter.
-func (p Posts) Less(i, j int) bool {
-	return p[i].Meta.Posted.After(p[j].Meta.Posted)
 }
 
 // TableRows returns table rows for the given slice of posts.
@@ -45,6 +33,52 @@ func (p Posts) FilterBySelector(sel selector.Selector) []*Post {
 		if sel.Matches(post.Labels()) {
 			output = append(output, post)
 		}
+	}
+	return output
+}
+
+// Sort returns a sorter.
+func (p Posts) Sort(key string, ascending bool) *PostSorter {
+	return &PostSorter{
+		Posts:     []*Post(p),
+		SortKey:   key,
+		Ascending: ascending,
+	}
+}
+
+// PostSorter sorts a set of posts by a given sort key.
+type PostSorter struct {
+	Posts     []*Post
+	SortKey   string
+	Ascending bool
+}
+
+// Len implements sorter.
+func (p PostSorter) Len() int {
+	return len(p.Posts)
+}
+
+// Swap implements sorter.
+func (p PostSorter) Swap(i, j int) {
+	p.Posts[i], p.Posts[j] = p.Posts[j], p.Posts[i]
+}
+
+// Less implements sorter.
+func (p PostSorter) Less(i, j int) bool {
+	var output bool
+	switch p.SortKey {
+	case constants.PostSortKeyPosted:
+		output = p.Posts[i].Meta.Posted.After(p.Posts[j].Meta.Posted)
+	case constants.PostSortKeyCapture:
+		output = p.Posts[i].Image.Exif.CaptureDate.After(p.Posts[j].Image.Exif.CaptureDate)
+	case constants.PostSortKeyIndex:
+		output = p.Posts[i].Index < p.Posts[j].Index
+	default:
+		output = p.Posts[i].Meta.Posted.After(p.Posts[j].Meta.Posted)
+	}
+
+	if p.Ascending {
+		return !output
 	}
 	return output
 }

@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/blend/go-sdk/ansi"
 	"github.com/blend/go-sdk/async"
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/fileutil"
@@ -120,8 +119,12 @@ func (e Engine) Build(ctx context.Context) error {
 		return err
 	}
 
-	columns, rows := renderContext.Stats.TableData()
-	ansi.Table(os.Stdout, columns, rows)
+	/*
+		columns, rows := renderContext.Stats.TableData()
+		for index, column := range columns {
+			logger.MaybeInfof(e.Log, "%s: %s", column, rows[index])
+		}
+	*/
 
 	return nil
 }
@@ -159,6 +162,7 @@ func (e Engine) DiscoverPosts(ctx context.Context) (*model.Data, error) {
 	tags := make(map[string]*model.Tag)
 	postsPath := e.Config.PostsPathOrDefault()
 
+	var postIndex int
 	logger.MaybeInfof(e.Log, "searching `%s` for posts", postsPath)
 	err = filepath.Walk(postsPath, func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -168,16 +172,20 @@ func (e Engine) DiscoverPosts(ctx context.Context) (*model.Data, error) {
 			return nil
 		}
 		if info.IsDir() {
-			logger.MaybeDebugf(e.Log, "%s: reading post", currentPath)
+			defer func() {
+				postIndex++
+			}()
+
+			logger.MaybeDebugf(e.Log, "%s: reading post (%d)", currentPath, postIndex)
 
 			// check if we have an image
-			post, err := e.GeneratePost(ctx, slugTemplate, currentPath)
+			post, err := e.GeneratePost(ctx, slugTemplate, currentPath, postIndex)
 			if err != nil {
 				return err
 			}
 			output.Posts = append([]*model.Post{post}, output.Posts...)
 
-			if !e.Config.SkipTags {
+			if !e.Config.SkipGenerateTags {
 				for _, tag := range post.Meta.Tags {
 					if tagPosts, ok := tags[tag]; ok {
 						tagPosts.Posts = append(tagPosts.Posts, post)
@@ -198,7 +206,7 @@ func (e Engine) DiscoverPosts(ctx context.Context) (*model.Data, error) {
 
 	// sort by metadata posted date
 	// we don't really care about directory / filesystem order
-	sort.Sort(model.Posts(output.Posts))
+	sort.Sort(model.Posts(output.Posts).Sort(e.Config.PostSortKeyOrDefault()))
 
 	// create previous and next links for each post.
 	for index := range output.Posts {
@@ -210,10 +218,10 @@ func (e Engine) DiscoverPosts(ctx context.Context) (*model.Data, error) {
 		}
 	}
 
-	if !e.Config.SkipTags {
+	if !e.Config.SkipGenerateTags {
 		// add tags, make sure they're sorted.
 		for _, tag := range tags {
-			sort.Sort(model.Posts(tag.Posts))
+			sort.Sort(model.Posts(tag.Posts).Sort(e.Config.PostSortKeyOrDefault()))
 			output.Tags = append(output.Tags, *tag)
 		}
 		sort.Sort(model.Tags(output.Tags))
@@ -315,7 +323,7 @@ func (e Engine) Render(ctx context.Context) error {
 		}
 
 		if post.SourceImagePath != "" {
-			if !e.Config.SkipImageOriginal {
+			if !e.Config.SkipCopyOriginalImage {
 				if err := e.CopyImageOriginal(ctx, post.SourceImagePath, slugPath); err != nil {
 					return err
 				}
@@ -355,7 +363,7 @@ func (e Engine) Render(ctx context.Context) error {
 		}
 	}
 
-	if !e.Config.SkipTags {
+	if !e.Config.SkipGenerateTags {
 		tagTemplatePath := e.Config.TagTemplateOrDefault()
 		if len(tagTemplatePath) > 0 && Exists(tagTemplatePath) {
 			tagTemplate, err := e.CompileTemplate(tagTemplatePath, renderContext.Partials)
@@ -384,7 +392,7 @@ func (e Engine) Render(ctx context.Context) error {
 		return err
 	}
 
-	if !e.Config.SkipJSONData {
+	if !e.Config.SkipGenerateJSONData {
 		dataOutputPath := filepath.Join(outputPath, constants.FileData)
 		logger.MaybeDebugf(e.Log, "%s: rendering page", dataOutputPath)
 		if err := e.WriteDataJSON(renderContext.Data, dataOutputPath); err != nil {
@@ -500,7 +508,7 @@ func (e Engine) DiscoverPartials(ctx context.Context) ([]string, error) {
 }
 
 // GeneratePost reads post contents and metadata from a folder.
-func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Template, path string) (*model.Post, error) {
+func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Template, path string, postIndex int) (*model.Post, error) {
 	files, err := ListDirectory(path)
 	if err != nil {
 		return nil, err
@@ -510,7 +518,9 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 		return nil, ex.New("no child files found").WithMessage(path)
 	}
 
-	var post model.Post
+	post := model.Post{
+		Index: postIndex,
+	}
 	var postModTime time.Time
 
 	for _, fi := range files {
@@ -731,7 +741,7 @@ func (e Engine) CreateSlug(slugTemplate *template.Template, p model.Post) string
 // GetImageSizePaths gets the map that corresponds to the image sizes and the image path.
 func (e Engine) GetImageSizePaths(post model.Post) map[string]string {
 	output := make(map[string]string)
-	if !e.Config.SkipImageOriginal {
+	if !e.Config.SkipCopyOriginalImage {
 		output["original"] = filepath.Join(post.Slug, constants.FileImageOriginal)
 	}
 	for _, size := range e.Config.ImageSizesOrDefault() {

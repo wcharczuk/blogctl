@@ -79,3 +79,11 @@ var (
 		ExtensionHTML,
 	}
 )
+
+// PostSortKeys
+var (
+	PostSortKeyCapture = "capture"
+	PostSortKeyPosted  = "posted"
+	PostSortKeyIndex   = "index"
+	PostSortKeyTitle   = "title"
+)
