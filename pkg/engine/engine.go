@@ -119,12 +119,10 @@ func (e Engine) Build(ctx context.Context) error {
 		return err
 	}
 
-	/*
-		columns, rows := renderContext.Stats.TableData()
-		for index, column := range columns {
-			logger.MaybeInfof(e.Log, "%s: %s", column, rows[index])
-		}
-	*/
+	columns, rows := renderContext.Stats.TableData()
+	for index, column := range columns {
+		logger.MaybeInfof(e.Log, "%s: %s", column, rows[0][index])
+	}
 
 	return nil
 }
@@ -468,15 +466,19 @@ func (e Engine) CleanThumbnailCache(ctx context.Context) error {
 	}
 
 	// purge folders
-	for _, path := range orphanedCachedPosts {
-		if !e.DryRun {
-			if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
-				return ex.New(err)
+	if len(orphanedCachedPosts) > 0 {
+		for _, path := range orphanedCachedPosts {
+			if !e.DryRun {
+				if err := os.RemoveAll(filepath.Join(thumbnailCachePath, path)); err != nil {
+					return ex.New(err)
+				}
+				logger.MaybeInfof(e.Log, "%s: purging orphaned cached directory", path)
+			} else {
+				logger.MaybeInfof(e.Log, "%s: (dry-run) would purge orphaned cached directory", path)
 			}
-			logger.MaybeInfof(e.Log, "%s: purging orphaned cached directory", path)
-		} else {
-			logger.MaybeInfof(e.Log, "%s: (dry-run) would purge orphaned cached directory", path)
 		}
+	} else {
+		logger.MaybeInfof(e.Log, "no orphaned cached posts found")
 	}
 
 	return nil

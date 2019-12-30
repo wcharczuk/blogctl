@@ -110,7 +110,7 @@ func (e *Ex) Format(s fmt.State, verb rune) {
 		if len(e.Message) > 0 {
 			io.WriteString(s, "; "+e.Message)
 		}
-		if s.Flag('+') {
+		if s.Flag('+') && e.StackTrace != nil {
 			e.StackTrace.Format(s, verb)
 		}
 		if e.Inner != nil {
@@ -167,6 +167,56 @@ func (e *Ex) Decompose() map[string]interface{} {
 // MarshalJSON is a custom json marshaler.
 func (e *Ex) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Decompose())
+}
+
+// UnmarshalJSON is a custom json unmarshaler.
+func (e *Ex) UnmarshalJSON(contents []byte) error {
+	// try first as a string ...
+	var class string
+	if tryErr := json.Unmarshal(contents, &class); tryErr == nil {
+		e.Class = Class(class)
+		return nil
+	}
+
+	// try an object ...
+	values := make(map[string]json.RawMessage)
+	if err := json.Unmarshal(contents, &values); err != nil {
+		return New(err)
+	}
+
+	if class, ok := values["Class"]; ok {
+		var classString string
+		if err := json.Unmarshal([]byte(class), &classString); err != nil {
+			return New(err)
+		}
+		e.Class = Class(classString)
+	}
+
+	if message, ok := values["Message"]; ok {
+		if err := json.Unmarshal([]byte(message), &e.Message); err != nil {
+			return New(err)
+		}
+	}
+
+	if inner, ok := values["Inner"]; ok {
+		var innerClass string
+		if tryErr := json.Unmarshal([]byte(inner), &class); tryErr == nil {
+			e.Inner = Class(innerClass)
+		}
+		innerEx := Ex{}
+		if tryErr := json.Unmarshal([]byte(inner), &innerEx); tryErr == nil {
+			e.Inner = &innerEx
+		}
+	}
+	if stack, ok := values["StackTrace"]; ok {
+		var stackStrings []string
+		if err := json.Unmarshal([]byte(stack), &stackStrings); err != nil {
+			return New(err)
+		}
+		e.StackTrace = StackStrings(stackStrings)
+	}
+
+	return nil
 }
 
 // String returns a fully formed string representation of the ex.

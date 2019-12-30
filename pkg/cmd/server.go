@@ -39,21 +39,15 @@ func Server(flags config.Flags) *cobra.Command {
 			app, err := web.New(web.OptConfig(cfg.Web), web.OptBindAddr(*bindAddr), web.OptLog(log))
 			sh.Fatal(err)
 
-			if len(*statics) > 0 {
-				filePaths := append(*statics, files)
-				log.Infof("using static search paths: %s", strings.Join(filePaths, ", "))
-				if *cached {
-					app.ServeStaticCached("/", filePaths)
-				} else {
-					app.ServeStatic("/", filePaths)
-				}
+			filePaths := append(*statics, files)
+			log.Infof("using static search paths: %s", strings.Join(filePaths, ", "))
+
+			if *cached {
+				log.Infof("using cached static file server")
+				app.ServeStaticCached("/", filePaths)
 			} else {
-				log.Infof("using static search path: %s", files)
-				if *cached {
-					app.ServeStaticCached("/", []string{files})
-				} else {
-					app.ServeStatic("/", []string{files})
-				}
+				log.Infof("using live static file server")
+				app.ServeStatic("/", filePaths)
 			}
 
 			app.SetStaticRewriteRule("/", "/$", func(filePath string, matchedPieces ...string) string {

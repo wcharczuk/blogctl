@@ -3,7 +3,6 @@ package config
 import (
 	"github.com/blend/go-sdk/web"
 
-	"github.com/blend/go-sdk/logger"
 	"github.com/wcharczuk/blogctl/pkg/constants"
 )
 
@@ -66,8 +65,6 @@ type Config struct {
 	S3 S3 `json:"s3,omitempty" yaml:"s3,omitempty"`
 	// Cloudfront governs options for how the s3 files are cached.
 	Cloudfront Cloudfront `json:"cloudfront,omitempty" yaml:"cloudfront,omitempty"`
-	// Logger is the config for the logger.
-	Logger logger.Config `json:"logger,omitempty" yaml:"logger,omitempty"`
 	// Web is the config for the web server.
 	Web web.Config `json:"web,omitempty" yaml:"web,omitempty"`
 

@@ -18,15 +18,22 @@ type Stats struct {
 
 // TableData returns the stats as ansi table data.
 func (s Stats) TableData() (columns []string, rows [][]string) {
-	columns = []string{"No. of Posts", "No. Tags", "No. of Image Posts", "No. of Text Posts", "Earliest", "Latest"}
-	rows = [][]string{
-		{
-			strconv.Itoa(s.NumPosts),
-			strconv.Itoa(s.NumTags),
-			strconv.Itoa(s.NumImagePosts),
-			strconv.Itoa(s.NumTextPosts),
-			s.Earliest.Format(time.RFC3339),
-			s.Latest.Format(time.RFC3339)},
+	columns = []string{
+		"number of posts",
+		"number of tags",
+		"number of image posts",
+		"number of text posts",
+		"earliest post",
+		"latest post",
+	}
+	rows = [][]string{{
+		strconv.Itoa(s.NumPosts),
+		strconv.Itoa(s.NumTags),
+		strconv.Itoa(s.NumImagePosts),
+		strconv.Itoa(s.NumTextPosts),
+		s.Earliest.Format(time.RFC3339),
+		s.Latest.Format(time.RFC3339),
+	},
 	}
 	return
 }
