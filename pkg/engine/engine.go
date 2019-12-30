@@ -206,7 +206,7 @@ func (e Engine) DiscoverPosts(ctx context.Context) (*model.Data, error) {
 
 	// sort by metadata posted date
 	// we don't really care about directory / filesystem order
-	sort.Sort(model.Posts(output.Posts).Sort(e.Config.PostSortKeyOrDefault()))
+	sort.Sort(model.Posts(output.Posts).Sort(e.Config.PostSortKeyOrDefault(), e.Config.PostSortAscendingOrDefault()))
 
 	// create previous and next links for each post.
 	for index := range output.Posts {
@@ -221,7 +221,7 @@ func (e Engine) DiscoverPosts(ctx context.Context) (*model.Data, error) {
 	if !e.Config.SkipGenerateTags {
 		// add tags, make sure they're sorted.
 		for _, tag := range tags {
-			sort.Sort(model.Posts(tag.Posts).Sort(e.Config.PostSortKeyOrDefault()))
+			sort.Sort(model.Posts(tag.Posts).Sort(e.Config.PostSortKeyOrDefault(), e.Config.PostSortAscendingOrDefault()))
 			output.Tags = append(output.Tags, *tag)
 		}
 		sort.Sort(model.Tags(output.Tags))
