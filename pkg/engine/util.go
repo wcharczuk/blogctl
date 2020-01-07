@@ -82,9 +82,10 @@ func ReadImage(path string) (model.Image, error) {
 	}
 
 	return model.Image{
-		Width:  image.Width,
-		Height: image.Height,
-		Exif:   exifData,
+		SourcePath: path,
+		Width:      image.Width,
+		Height:     image.Height,
+		Exif:       exifData,
 	}, nil
 }
 

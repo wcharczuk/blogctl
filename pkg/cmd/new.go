@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/blend/go-sdk/ansi/slant"
-	"github.com/blend/go-sdk/sh"
 	"github.com/blend/go-sdk/stringutil"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
@@ -29,7 +28,7 @@ func New(flags config.Flags) *cobra.Command {
 			imagePath := args[0]
 
 			cfg, cfgPath, err := config.ReadConfig(flags)
-			sh.Fatal(err)
+			Fatal(err)
 
 			log := Logger(flags, "new")
 			slant.Print(log.Output, "BLOGCTL")
@@ -41,10 +40,10 @@ func New(flags config.Flags) *cobra.Command {
 			var postedDate time.Time
 			if *posted != "" {
 				postedDate, err = time.Parse("2006-01-02", *posted)
-				sh.Fatal(err)
+				Fatal(err)
 			} else {
 				postedDate, err = engine.ExtractCaptureDate(imagePath)
-				sh.Fatal(err)
+				Fatal(err)
 			}
 
 			if *title == "" {
@@ -53,10 +52,7 @@ func New(flags config.Flags) *cobra.Command {
 
 			path := fmt.Sprintf("%s/%s-%s", cfg.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
 			log.Infof("writing new post to %s", path)
-			sh.Fatal(err)
-			if err := engine.Copy(imagePath, filepath.Join(path, filepath.Base(imagePath))); err != nil {
-				sh.Fatal(err)
-			}
+			Fatal(engine.Copy(imagePath, filepath.Join(path, filepath.Base(imagePath))))
 
 			var metaTags []string
 			if tags != nil {
@@ -68,9 +64,7 @@ func New(flags config.Flags) *cobra.Command {
 				Posted:   postedDate,
 				Tags:     metaTags,
 			}
-			if err := engine.WriteYAML(filepath.Join(path, constants.FileMeta), meta); err != nil {
-				sh.Fatal(err)
-			}
+			Fatal(engine.WriteYAML(filepath.Join(path, constants.FileMeta), meta))
 		},
 	}
 

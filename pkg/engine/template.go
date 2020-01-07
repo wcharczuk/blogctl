@@ -15,7 +15,7 @@ func ViewFuncs() template.FuncMap {
 	base := sdkTemplate.Funcs.FuncMap()
 	base["partition"] = partition
 	base["set_title"] = setTitle
-	base["render"] = render
+	base["render_post"] = renderPost
 	return base
 }
 
@@ -68,7 +68,7 @@ func setTitle(vm *model.ViewModel, title string) error {
 	return nil
 }
 
-func render(post model.Post) (template.HTML, error) {
+func renderPost(post model.Post) (template.HTML, error) {
 	if post.Template == nil {
 		return "", fmt.Errorf("post has unset template; cannot render. post: %s", post.TitleOrDefault())
 	}

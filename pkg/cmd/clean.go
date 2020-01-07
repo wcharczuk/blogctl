@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/blend/go-sdk/ansi/slant"
-	"github.com/blend/go-sdk/sh"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"
@@ -19,7 +18,7 @@ func Clean(flags config.Flags) *cobra.Command {
 		Short: "Clean caches",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, configPath, err := config.ReadConfig(flags)
-			sh.Fatal(err)
+			Fatal(err)
 
 			log := Logger(flags, "clean")
 			slant.Print(log.Output, "BLOGCTL")
@@ -33,7 +32,7 @@ func Clean(flags config.Flags) *cobra.Command {
 				engine.OptParallelism(*flags.Parallelism),
 				engine.OptDryRun(*flags.DryRun),
 			).CleanThumbnailCache(context.Background()); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 		},
 	}

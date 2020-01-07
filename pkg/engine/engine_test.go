@@ -84,7 +84,7 @@ func TestEngineBuild(t *testing.T) {
 	assert.Nil(json.NewDecoder(f).Decode(&data))
 
 	assert.Len(data.Posts, 2)
-	assert.Len(data.Posts[0].Image.Paths, 4)
-	assert.Empty(data.Posts[1].Image.Paths)
+	assert.Len(data.Posts[0].Image.Sizes, 4)
+	assert.Empty(data.Posts[1].Image.Sizes)
 	assert.Len(data.Tags, 4)
 }

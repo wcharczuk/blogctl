@@ -7,7 +7,6 @@ import (
 
 	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/graceful"
-	"github.com/blend/go-sdk/sh"
 	"github.com/blend/go-sdk/web"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
@@ -23,7 +22,7 @@ func Server(flags config.Flags) *cobra.Command {
 		Short: "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, cfgPath, err := config.ReadConfig(flags)
-			sh.Fatal(err)
+			Fatal(err)
 
 			log := Logger(flags, "server")
 			slant.Print(log.Output, "BLOGCTL")
@@ -37,7 +36,7 @@ func Server(flags config.Flags) *cobra.Command {
 
 			files := cfg.OutputPathOrDefault()
 			app, err := web.New(web.OptConfig(cfg.Web), web.OptBindAddr(*bindAddr), web.OptLog(log))
-			sh.Fatal(err)
+			Fatal(err)
 
 			filePaths := append(*statics, files)
 			log.Infof("using static search paths: %s", strings.Join(filePaths, ", "))
@@ -56,9 +55,7 @@ func Server(flags config.Flags) *cobra.Command {
 				}
 				return filePath
 			})
-			if err := graceful.Shutdown(app); err != nil {
-				sh.Fatal(err)
-			}
+			Fatal(graceful.Shutdown(app))
 		},
 	}
 	bindAddr = cmd.Flags().String("bind-addr", ":9000", "The bind address for the static webserver.")

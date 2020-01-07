@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/blend/go-sdk/async"
@@ -264,7 +265,7 @@ func (e Engine) Render(ctx context.Context) error {
 	var defaultImagePostTemplate *template.Template
 	imagePostTemplatePath := e.Config.ImagePostTemplateOrDefault()
 	if imagePostTemplatePath != "" {
-		defaultImagePostTemplate, err = e.CompileTemplate(imagePostTemplatePath, renderContext.Partials)
+		_, defaultImagePostTemplate, err = e.CompileTemplate(imagePostTemplatePath, renderContext.Partials)
 		if err != nil {
 			return err
 		}
@@ -273,7 +274,7 @@ func (e Engine) Render(ctx context.Context) error {
 	var defaultTextPostTemplate *template.Template
 	textPostTemplatePath := e.Config.TextPostTemplateOrDefault()
 	if textPostTemplatePath != "" {
-		defaultTextPostTemplate, err = e.CompileTemplate(textPostTemplatePath, renderContext.Partials)
+		_, defaultTextPostTemplate, err = e.CompileTemplate(textPostTemplatePath, renderContext.Partials)
 		if err != nil {
 			return err
 		}
@@ -288,8 +289,8 @@ func (e Engine) Render(ctx context.Context) error {
 		post := workItem.(*model.Post)
 
 		var postTemplate *template.Template
-		if post.SourceTextPath != "" {
-			if post.Template, err = e.CompileTemplate(post.SourceTextPath, renderContext.Partials); err != nil {
+		if post.Text.SourcePath != "" {
+			if post.Text.Template, post.Template, err = e.CompileTemplate(post.Text.SourcePath, renderContext.Partials); err != nil {
 				return ex.New(err)
 			}
 		}
@@ -307,8 +308,8 @@ func (e Engine) Render(ctx context.Context) error {
 
 		outputIndexPath := filepath.Join(slugPath, constants.FileIndex)
 		logger.MaybeDebugf(e.Log, "%s: rendering page", outputIndexPath)
-		var postText string
-		if postText, err = e.RenderTemplateToFile(postTemplate, outputIndexPath, &model.ViewModel{
+		var postTextOutput string
+		if postTextOutput, err = e.RenderTemplateToFile(postTemplate, outputIndexPath, &model.ViewModel{
 			Config: e.Config,
 			Posts:  renderContext.Data.Posts,
 			Tags:   renderContext.Data.Tags,
@@ -317,16 +318,16 @@ func (e Engine) Render(ctx context.Context) error {
 			return err
 		}
 		if post.IsText() {
-			post.Text = postText
+			post.Text.Output = postTextOutput
 		}
 
-		if post.SourceImagePath != "" {
+		if post.Image.SourcePath != "" {
 			if !e.Config.SkipCopyOriginalImage {
-				if err := e.CopyImageOriginal(ctx, post.SourceImagePath, slugPath); err != nil {
+				if err := e.CopyImageOriginal(ctx, post.Image.SourcePath, slugPath); err != nil {
 					return err
 				}
 			}
-			if err := e.ProcessThumbnails(ctx, post.SourceImagePath, slugPath); err != nil {
+			if err := e.ProcessThumbnails(ctx, post.Image.SourcePath, slugPath); err != nil {
 				return err
 			}
 		}
@@ -347,7 +348,7 @@ func (e Engine) Render(ctx context.Context) error {
 		pageOutputPath := filepath.Join(outputPath, page.Name())
 
 		logger.MaybeDebugf(e.Log, "%s: rendering page", pageOutputPath)
-		pageTemplate, err := e.CompileTemplate(pageSourcePath, renderContext.Partials)
+		_, pageTemplate, err := e.CompileTemplate(pageSourcePath, renderContext.Partials)
 		if err != nil {
 			return err
 		}
@@ -364,7 +365,7 @@ func (e Engine) Render(ctx context.Context) error {
 	if !e.Config.SkipGenerateTags {
 		tagTemplatePath := e.Config.TagTemplateOrDefault()
 		if len(tagTemplatePath) > 0 && Exists(tagTemplatePath) {
-			tagTemplate, err := e.CompileTemplate(tagTemplatePath, renderContext.Partials)
+			_, tagTemplate, err := e.CompileTemplate(tagTemplatePath, renderContext.Partials)
 			if err != nil {
 				return err
 			}
@@ -517,31 +518,36 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 	}
 
 	if len(files) == 0 {
-		return nil, ex.New("no child files found").WithMessage(path)
+		return nil, ex.New("no child files found in post directory").WithMessage(path)
 	}
 
 	post := model.Post{
 		Index: postIndex,
 	}
-	var postModTime time.Time
 
+	var postModTime time.Time
 	for _, fi := range files {
 		name := fi.Name()
-		if name == constants.FileMeta {
+		if strings.ToLower(name) == constants.FileMeta {
 			if err := ReadYAML(filepath.Join(path, name), &post.Meta); err != nil {
 				return nil, err
 			}
-		} else if HasExtension(name, constants.ImageExtensions...) && post.Image.IsZero() {
-			post.SourceImagePath = filepath.Join(path, name)
-
+		} else if HasExtension(name, constants.ImageExtensions...) {
+			if post.Image.SourcePath != "" {
+				return nil, ex.New("multiple image files found in post directory", ex.OptMessage(path))
+			}
+			post.Image.SourcePath = filepath.Join(path, name)
 			if postModTime.Before(fi.ModTime()) {
 				postModTime = fi.ModTime()
 			}
-			if post.Image, err = ReadImage(post.SourceImagePath); err != nil {
+			if post.Image, err = ReadImage(post.Image.SourcePath); err != nil {
 				return nil, err
 			}
-		} else if HasExtension(name, constants.TemplateExtensions...) && post.SourceTextPath == "" {
-			post.SourceTextPath = filepath.Join(path, name)
+		} else if HasExtension(name, constants.TemplateExtensions...) {
+			if post.Text.SourcePath != "" {
+				return nil, ex.New("multiple text files found in post directory", ex.OptMessage(path))
+			}
+			post.Text.SourcePath = filepath.Join(path, name)
 			if postModTime.Before(fi.ModTime()) {
 				postModTime = fi.ModTime()
 			}
@@ -550,17 +556,15 @@ func (e Engine) GeneratePost(ctx context.Context, slugTemplate *template.Templat
 		}
 	}
 
+	post.Slug = e.CreateSlug(slugTemplate, post)
+	post.ModTime = postModTime
 	if post.Meta.Posted.IsZero() {
 		post.Meta.Posted = postModTime
 	}
-	if post.Slug == "" {
-		post.Slug = e.CreateSlug(slugTemplate, post)
-	}
 	if post.IsImage() {
-		post.Image.Paths = e.GetImageSizePaths(post)
+		post.Image.Sizes = e.GetImageSizePaths(post)
 	}
-
-	if post.SourceImagePath == "" && post.SourceTextPath == "" {
+	if post.Image.SourcePath == "" && post.Text.SourcePath == "" {
 		return nil, ex.New("no image or text post data found", ex.OptMessage(path))
 	}
 	return &post, nil
@@ -592,25 +596,28 @@ func (e Engine) ProcessThumbnails(ctx context.Context, originalFilePath, destina
 }
 
 // CompileTemplate compiles a template.
-func (e Engine) CompileTemplate(templatePath string, partials []string) (*template.Template, error) {
-	contents, err := ioutil.ReadFile(templatePath)
-	if err != nil {
-		return nil, ex.New(err).WithMessagef("template path: %s", templatePath)
+func (e Engine) CompileTemplate(templatePath string, partials []string) (contents string, final *template.Template, err error) {
+	fileContents, fileErr := ioutil.ReadFile(templatePath)
+	if fileErr != nil {
+		err = ex.New(fileErr).WithMessagef("template path: %s", templatePath)
+		return
 	}
-
+	contents = string(fileContents)
 	tmp := template.New(templatePath).Funcs(ViewFuncs())
 	for _, partial := range partials {
-		_, err := tmp.Parse(partial)
+		_, err = tmp.Parse(partial)
 		if err != nil {
-			return nil, ex.New(err).WithMessagef("template path: %s", templatePath)
+			err = ex.New(err).WithMessagef("template path: %s", templatePath)
+			return
 		}
 	}
 
-	final, err := tmp.Parse(string(contents))
+	final, err = tmp.Parse(string(contents))
 	if err != nil {
-		return nil, ex.New(err).WithMessagef("template path: %s", templatePath)
+		err = ex.New(err).WithMessagef("template path: %s", templatePath)
+		return
 	}
-	return final, nil
+	return
 }
 
 // WriteDataJSON writes a data file to disk.

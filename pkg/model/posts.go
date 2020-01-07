@@ -65,16 +65,25 @@ func (p PostSorter) Swap(i, j int) {
 
 // Less implements sorter.
 func (p PostSorter) Less(i, j int) bool {
+	ip, jp := p.Posts[i], p.Posts[j]
+
 	var output bool
 	switch p.SortKey {
 	case constants.PostSortKeyPosted:
-		output = p.Posts[i].Meta.Posted.After(p.Posts[j].Meta.Posted)
+		output = ip.Meta.Posted.After(jp.Meta.Posted)
 	case constants.PostSortKeyCapture:
-		output = p.Posts[i].Image.Exif.CaptureDate.After(p.Posts[j].Image.Exif.CaptureDate)
+		it, jt := ip.Image.Exif.CaptureDate, jp.Image.Exif.CaptureDate
+		if it.IsZero() {
+			it = ip.Meta.Posted
+		}
+		if jt.IsZero() {
+			jt = jp.Meta.Posted
+		}
+		output = it.After(jt)
 	case constants.PostSortKeyIndex:
-		output = p.Posts[i].Index < p.Posts[j].Index
+		output = ip.Index < jp.Index
 	default:
-		output = p.Posts[i].Meta.Posted.After(p.Posts[j].Meta.Posted)
+		output = ip.Meta.Posted.After(jp.Meta.Posted)
 	}
 
 	if p.Ascending {

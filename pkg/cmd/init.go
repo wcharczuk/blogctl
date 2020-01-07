@@ -24,7 +24,7 @@ func Init(flags config.Flags) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			name := args[0]
 			if name == "" {
-				sh.Fatalf("must provide a folder name")
+				Fatal(fmt.Errorf("must provide a folder name"))
 			}
 
 			slant.Print(os.Stdout, "blogctl")
@@ -50,48 +50,48 @@ func Init(flags config.Flags) *cobra.Command {
 			}
 
 			if err := engine.MakeDir(name); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.MakeDir(filepath.Join(name, config.PostsPathOrDefault())); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.MakeDir(filepath.Join(name, config.PagesPathOrDefault())); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.MakeDir(filepath.Join(name, config.PartialsPathOrDefault())); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.MakeDir(filepath.Join(name, config.StaticsPathOrDefault())); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.MakeDir(filepath.Join(name, config.StaticsPathOrDefault(), "css")); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.WriteYAML(filepath.Join(name, *flags.ConfigPath), config); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 
 			/* write individual files */
 			if err := engine.WriteFile(filepath.Join(name, config.PartialsPathOrDefault(), "header.html"), []byte(headerHTML)); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.WriteFile(filepath.Join(name, config.PartialsPathOrDefault(), "footer.html"), []byte(footerHTML)); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.WriteFile(filepath.Join(name, config.PagesPathOrDefault(), constants.FileIndex), []byte(indexHTML)); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.WriteFile(filepath.Join(name, config.ImagePostTemplateOrDefault()), []byte(imageHTML)); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.WriteFile(filepath.Join(name, config.TextPostTemplateOrDefault()), []byte(textHTML)); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.WriteFile(filepath.Join(name, config.TagTemplateOrDefault()), []byte(tagHTML)); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 			if err := engine.WriteFile(filepath.Join(name, config.StaticsPathOrDefault(), "css/site.css"), []byte(siteCSS)); err != nil {
-				sh.Fatal(err)
+				Fatal(err)
 			}
 		},
 	}
@@ -137,7 +137,7 @@ const (
 
 	textHTML = `{{ template "header" . }}
 <div class="text post">
-	{{ render .Post }}
+	{{ render_post .Post }}
 </div>
 {{ template "footer" . }}`
 

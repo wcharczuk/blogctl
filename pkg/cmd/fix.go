@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/blend/go-sdk/ansi/slant"
-	"github.com/blend/go-sdk/sh"
 	"github.com/blend/go-sdk/stringutil"
 	"github.com/blend/go-sdk/uuid"
 	"github.com/spf13/cobra"
@@ -25,7 +24,7 @@ func Fix(flags config.Flags) *cobra.Command {
 		Short: "Rename all subdirectories in the posts according to the slugify rules",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, configPath, err := config.ReadConfig(flags)
-			sh.Fatal(err)
+			Fatal(err)
 
 			log := Logger(flags, "slugify")
 			slant.Print(log.Output, "BLOGCTL")
@@ -36,7 +35,7 @@ func Fix(flags config.Flags) *cobra.Command {
 
 			postsPath := cfg.PostsPathOrDefault()
 			contents, err := ioutil.ReadDir(postsPath)
-			sh.Fatal(err)
+			Fatal(err)
 			var from, temp, to string
 			for _, object := range contents {
 				if !object.IsDir() {
@@ -51,9 +50,9 @@ func Fix(flags config.Flags) *cobra.Command {
 					} else {
 						temp = filepath.Join(postsPath, uuid.V4().String())
 						err = os.Rename(from, temp)
-						sh.Fatal(err)
+						Fatal(err)
 						err = os.Rename(temp, to)
-						sh.Fatal(err)
+						Fatal(err)
 						log.Infof("renamed from %s to %s", from, to)
 					}
 				}

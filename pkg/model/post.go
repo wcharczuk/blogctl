@@ -5,22 +5,22 @@ import (
 	"html/template"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/wcharczuk/blogctl/pkg/constants"
 )
 
 // Post is a single post item.
 type Post struct {
-	Path  string `json:"outputPath,omitempty" yaml:"outputPath,omitempty"`
-	Slug  string `json:"slug,omitempty" yaml:"slug,omitempty"`
-	Index int    `json:"index" yaml:"index"`
-	Meta  Meta   `json:"meta" yaml:"meta"`
+	OriginalPath string    `json:"originalPath,omitempty" yaml:"originalPath,omitempty"`
+	OutputPath   string    `json:"outputPath,omitempty" yaml:"outputPath,omitempty"`
+	Slug         string    `json:"slug,omitempty" yaml:"slug,omitempty"`
+	Index        int       `json:"index" yaml:"index"`
+	ModTime      time.Time `json:"modTime" yaml:"modTime"`
 
-	Text  string `json:"text,omitempty" yaml:"text,omitempty"`
-	Image Image  `json:"image,omitempty" yaml:"image,omitempty"`
-
-	SourceImagePath string `json:"sourceImagePath,omitempty" yaml:"sourceImagePath,omitempty"`
-	SourceTextPath  string `json:"sourceTextPath,omitempty" yaml:"sourceTextPath,omitempty"`
+	Meta  Meta  `json:"meta" yaml:"meta"`
+	Text  Text  `json:"text,omitempty" yaml:"text,omitempty"`
+	Image Image `json:"image,omitempty" yaml:"image,omitempty"`
 
 	Template *template.Template `json:"-" yaml:"-"`
 	Previous *Post              `json:"-" yaml:"-"`
@@ -51,17 +51,17 @@ func (p Post) PostType() string {
 
 // IsZero returns if the post is set.
 func (p Post) IsZero() bool {
-	return p.SourceImagePath == "" && p.SourceTextPath == ""
+	return p.Text.IsZero() && p.Image.IsZero()
 }
 
 // IsImage returns if the post is an image post.
 func (p Post) IsImage() bool {
-	return p.SourceImagePath != ""
+	return !p.Image.IsZero()
 }
 
 // IsText returns if the post is an text post.
 func (p Post) IsText() bool {
-	return p.SourceTextPath != ""
+	return !p.Text.IsZero()
 }
 
 // HasPrevious returns if there is a previous post.

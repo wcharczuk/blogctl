@@ -38,7 +38,7 @@ func Show(flags config.Flags) *cobra.Command {
 		Short: "Show posts",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, _, err := config.ReadConfig(flags)
-			sh.Fatal(err)
+			Fatal(err)
 			e := engine.MustNew(
 				engine.OptConfig(cfg),
 				engine.OptParallelism(*flags.Parallelism),
@@ -46,11 +46,11 @@ func Show(flags config.Flags) *cobra.Command {
 			)
 
 			posts, err := e.DiscoverPosts(context.Background())
-			sh.Fatal(err)
+			Fatal(err)
 
 			if *postsSelector != "" {
 				sel, err := selector.Parse(*postsSelector)
-				sh.Fatal(err)
+				Fatal(err)
 				posts.Posts = model.Posts(posts.Posts).FilterBySelector(sel)
 			}
 
@@ -99,9 +99,9 @@ func Show(flags config.Flags) *cobra.Command {
 			}
 		},
 	}
-	postsSelector = posts.Flags().StringP("labels", "l", "", "Filter posts with a given label selector")
+	postsSelector = posts.Flags().StringP("labels", "l", "", "Filter posts with a given label selector (ex. `tree` for tagged with `tree)")
 	postsOrderBy = posts.Flags().String("order-by", "title", "Which field to order the posts by; one of `location`, `posted`, `slug`, or `title`")
-	postsOrderDesc = posts.Flags().Bool("desc", false, "The posts sort order (true will sort descending)")
+	postsOrderDesc = posts.Flags().Bool("desc", false, "The posts sort direction (`true` will sort descending, `false` ascending)")
 
 	var tagsOrderBy *string
 	var tagsOrderDesc *bool
@@ -110,7 +110,7 @@ func Show(flags config.Flags) *cobra.Command {
 		Short: "Show tags",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, _, err := config.ReadConfig(flags)
-			sh.Fatal(err)
+			Fatal(err)
 			e := engine.MustNew(
 				engine.OptConfig(cfg),
 				engine.OptParallelism(*flags.Parallelism),
@@ -118,7 +118,7 @@ func Show(flags config.Flags) *cobra.Command {
 			)
 
 			posts, err := e.DiscoverPosts(context.Background())
-			sh.Fatal(err)
+			Fatal(err)
 			switch strings.ToLower(*tagsOrderBy) {
 			case "tag":
 				if *tagsOrderDesc {

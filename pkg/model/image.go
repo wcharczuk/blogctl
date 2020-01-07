@@ -4,10 +4,11 @@ import "image"
 
 // Image represents a posted image.
 type Image struct {
-	Width  int               `json:"width" yaml:"width"`
-	Height int               `json:"height" yaml:"height"`
-	Exif   Exif              `json:"exif" yaml:"exif"`
-	Paths  map[string]string `json:"paths,omitempty" yaml:"paths,omitempty"`
+	SourcePath string            `json:"sourcePath" yaml:"sourcePath"`
+	Width      int               `json:"width" yaml:"width"`
+	Height     int               `json:"height" yaml:"height"`
+	Exif       Exif              `json:"exif" yaml:"exif"`
+	Sizes      map[string]string `json:"sizes,omitempty" yaml:"sizes,omitempty"`
 }
 
 // IsZero returns if the image has been processed or not.
