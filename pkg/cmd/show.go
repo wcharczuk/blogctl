@@ -7,12 +7,12 @@ import (
 	"os"
 	"sort"
 	"strings"
-
-	"github.com/blend/go-sdk/selector"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 
 	"github.com/blend/go-sdk/ansi"
+	"github.com/blend/go-sdk/selector"
 	"github.com/blend/go-sdk/sh"
 	"github.com/blend/go-sdk/yaml"
 
@@ -105,6 +105,7 @@ func Show(flags config.Flags) *cobra.Command {
 
 	var tagsOrderBy *string
 	var tagsOrderDesc *bool
+	var tagsSimilar *bool
 	tags := &cobra.Command{
 		Use:   "tags",
 		Short: "Show tags",
@@ -134,27 +135,124 @@ func Show(flags config.Flags) *cobra.Command {
 				}
 			}
 
+			tags := posts.Tags
+
+			if *tagsSimilar {
+				tags = filterSimilar(tags, 1)
+			}
+
 			switch strings.ToLower(*outputFormat) {
 			case "name":
-				for _, tag := range posts.Tags {
+				for _, tag := range tags {
 					fmt.Fprintf(os.Stdout, "%s\n", tag.Tag)
 				}
 			case "json":
-				sh.Fatal(json.NewEncoder(os.Stdout).Encode(posts.Tags))
+				sh.Fatal(json.NewEncoder(os.Stdout).Encode(tags))
 			case "yaml":
-				sh.Fatal(yaml.NewEncoder(os.Stdout).Encode(posts.Tags))
+				sh.Fatal(yaml.NewEncoder(os.Stdout).Encode(tags))
 			case "table":
-				sh.Fatal(ansi.TableForSlice(os.Stdout, model.Tags(posts.Tags).TableRows()))
+				sh.Fatal(ansi.TableForSlice(os.Stdout, model.Tags(tags).TableRows()))
 			default:
 				sh.Fatal(fmt.Errorf("invalid output format: %s", *outputFormat))
 			}
 		},
 	}
 
+	tagsSimilar = tags.Flags().Bool("similar", false, "Show only tags that have an small edit distance to each other")
 	tagsOrderBy = tags.Flags().String("order-by", "tag", "Which field to order the tags by; one of `tag`, or `posts`")
 	tagsOrderDesc = tags.Flags().Bool("desc", false, "The tags sort order (true will sort descending)")
 
 	cmd.AddCommand(posts)
 	cmd.AddCommand(tags)
 	return cmd
+}
+
+func filterSimilar(tags []model.Tag, editDistance int) []model.Tag {
+	var output []model.Tag
+
+	for ai, a := range tags {
+		var didAddA bool
+		for bi, b := range tags {
+			if ai == bi {
+				continue
+			}
+			if distance := computeDistance(a.Tag, b.Tag); distance <= editDistance {
+				if !didAddA {
+					output = append(output, a)
+					didAddA = true
+				}
+				output = append(output, b)
+			}
+		}
+	}
+
+	return output
+}
+
+// ComputeDistance computes the levenshtein distance between the two
+// strings passed as an argument. The return value is the levenshtein distance
+//
+// Works on runes (Unicode code points) but does not normalize
+// the input strings. See https://blog.golang.org/normalization
+// and the golang.org/x/text/unicode/norm pacage.
+func computeDistance(a, b string) int {
+	if len(a) == 0 {
+		return utf8.RuneCountInString(b)
+	}
+
+	if len(b) == 0 {
+		return utf8.RuneCountInString(a)
+	}
+
+	if a == b {
+		return 0
+	}
+
+	// We need to convert to []rune if the strings are non-ASCII.
+	// This could be avoided by using utf8.RuneCountInString
+	// and then doing some juggling with rune indices,
+	// but leads to far more bounds checks. It is a reasonable trade-off.
+	s1 := []rune(a)
+	s2 := []rune(b)
+
+	// swap to save some memory O(min(a,b)) instead of O(a)
+	if len(s1) > len(s2) {
+		s1, s2 = s2, s1
+	}
+	lenS1 := len(s1)
+	lenS2 := len(s2)
+
+	// init the row
+	x := make([]uint16, lenS1+1)
+	// we start from 1 because index 0 is already 0.
+	for i := 1; i < len(x); i++ {
+		x[i] = uint16(i)
+	}
+
+	// make a dummy bounds check to prevent the 2 bounds check down below.
+	// The one inside the loop is particularly costly.
+	_ = x[lenS1]
+	// fill in the rest
+	for i := 1; i <= lenS2; i++ {
+		prev := uint16(i)
+		var current uint16
+		for j := 1; j <= lenS1; j++ {
+			if s2[i-1] == s1[j-1] {
+				current = x[j-1] // match
+			} else {
+				current = min(min(x[j-1]+1, prev+1), x[j]+1)
+			}
+			x[j-1] = prev
+			prev = current
+		}
+		x[lenS1] = prev
+	}
+	return int(x[lenS1])
+}
+
+func min(a, b uint16) uint16 {
+	if a < b {
+		return a
+	}
+	return b
 }
