@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -52,7 +53,11 @@ func New(flags config.Flags) *cobra.Command {
 
 			path := fmt.Sprintf("%s/%s-%s", cfg.PostsPathOrDefault(), postedDate.Format("2006-01-02"), stringutil.Slugify(*title))
 			log.Infof("writing new post to %s", path)
-			Fatal(engine.Copy(imagePath, filepath.Join(path, filepath.Base(imagePath))))
+			fullPath := filepath.Join(path, filepath.Base(imagePath))
+			if _, err := os.Stat(fullPath); err != nil {
+				Fatal(fmt.Errorf("post directory already exists, aborting"))
+			}
+			Fatal(engine.Copy(imagePath, fullPath))
 
 			var metaTags []string
 			if tags != nil {
