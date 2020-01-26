@@ -1,18 +1,14 @@
 package async
 
 import (
-	"sync"
 	"sync/atomic"
 )
 
 // NewLatch creates a new latch.
 func NewLatch() *Latch {
-	return &Latch{
-		starting: make(chan struct{}, 1),
-		started:  make(chan struct{}, 1),
-		stopping: make(chan struct{}, 1),
-		stopped:  make(chan struct{}, 1),
-	}
+	l := new(Latch)
+	l.Reset()
+	return l
 }
 
 /*
@@ -25,10 +21,12 @@ The lifecycle is generally as follows:
 	2 - started - goto 3
 	3 - stopping - goto 0
 
-Control flow is coordinated with chan struct{}, which acts as a semaphore.
+Control flow is coordinated with chan struct{}, which acts as a semaphore but can only
+alert (1) listener as it is buffered.
+
+In order to start a `stopped` latch, you must call `.Reset()` first to initialize channels.
 */
 type Latch struct {
-	sync.Mutex
 	state int32
 
 	starting chan struct{}
@@ -39,13 +37,11 @@ type Latch struct {
 
 // Reset resets the latch.
 func (l *Latch) Reset() {
-	l.Lock()
 	l.state = LatchStopped
 	l.starting = make(chan struct{}, 1)
 	l.started = make(chan struct{}, 1)
 	l.stopping = make(chan struct{}, 1)
 	l.stopped = make(chan struct{}, 1)
-	l.Unlock()
 }
 
 // CanStart returns if the latch can start.
@@ -80,37 +76,33 @@ func (l *Latch) IsStopped() (isStopped bool) {
 
 // NotifyStarting returns the starting signal.
 // It is used to coordinate the transition from stopped -> starting.
+// There can only be (1) effective listener at a time for these events.
 func (l *Latch) NotifyStarting() (notifyStarting <-chan struct{}) {
-	l.Lock()
 	notifyStarting = l.starting
-	l.Unlock()
 	return
 }
 
 // NotifyStarted returns the started signal.
 // It is used to coordinate the transition from starting -> started.
+// There can only be (1) effective listener at a time for these events.
 func (l *Latch) NotifyStarted() (notifyStarted <-chan struct{}) {
-	l.Lock()
 	notifyStarted = l.started
-	l.Unlock()
 	return
 }
 
 // NotifyStopping returns the should stop signal.
 // It is used to trigger the transition from running -> stopping -> stopped.
+// There can only be (1) effective listener at a time for these events.
 func (l *Latch) NotifyStopping() (notifyStopping <-chan struct{}) {
-	l.Lock()
 	notifyStopping = l.stopping
-	l.Unlock()
 	return
 }
 
 // NotifyStopped returns the stopped signal.
 // It is used to coordinate the transition from stopping -> stopped.
+// There can only be (1) effective listener at a time for these events.
 func (l *Latch) NotifyStopped() (notifyStopped <-chan struct{}) {
-	l.Lock()
 	notifyStopped = l.stopped
-	l.Unlock()
 	return
 }
 
