@@ -7,7 +7,7 @@ import (
 )
 
 // NewSession creates a new aws session from a config.
-func NewSession(cfg *Config) *session.Session {
+func NewSession(cfg Config) *session.Session {
 	if cfg.IsZero() {
 		session := session.Must(session.NewSession())
 		if cfg.Region != "" {
@@ -17,7 +17,7 @@ func NewSession(cfg *Config) *session.Session {
 	}
 
 	awsConfig := &aws.Config{
-		Region:      RefStr(cfg.GetRegion()),
+		Region:      RefStr(cfg.Region),
 		Credentials: credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.SecretAccessKey, cfg.SecurityToken),
 	}
 	return session.Must(session.NewSession(awsConfig))

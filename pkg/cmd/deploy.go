@@ -45,7 +45,7 @@ func Deploy(flags config.Flags) *cobra.Command {
 				Fatal(fmt.Errorf("s3 region not set in config or in flags, cannot continue (set at `s3 > region` in the config or use --region)"))
 			}
 
-			mgr := s3.New(&aws.Config{
+			mgr := s3.New(aws.Config{
 				Region: *region,
 			})
 			mgr.Log = log

@@ -10,11 +10,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 
 	"github.com/blend/go-sdk/ansi"
 	"github.com/blend/go-sdk/selector"
 	"github.com/blend/go-sdk/sh"
-	"github.com/blend/go-sdk/yaml"
 
 	"github.com/wcharczuk/blogctl/pkg/config"
 	"github.com/wcharczuk/blogctl/pkg/engine"

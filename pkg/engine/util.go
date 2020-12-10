@@ -14,8 +14,9 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/blend/go-sdk/ex"
-	"github.com/blend/go-sdk/yaml"
 
 	"github.com/wcharczuk/blogctl/pkg/exif"
 	"github.com/wcharczuk/blogctl/pkg/model"

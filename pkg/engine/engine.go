@@ -285,7 +285,7 @@ func (e Engine) Render(ctx context.Context) error {
 	for _, post := range renderContext.Data.Posts {
 		posts <- post
 	}
-	async.NewBatch(func(ctx context.Context, workItem interface{}) error {
+	async.NewBatch(posts, func(ctx context.Context, workItem interface{}) error {
 		post := workItem.(*model.Post)
 
 		var postTemplate *template.Template
@@ -332,7 +332,7 @@ func (e Engine) Render(ctx context.Context) error {
 			}
 		}
 		return nil
-	}, posts, async.OptBatchParallelism(e.ParallelismOrDefault()), async.OptBatchErrors(batchErrors)).Process(ctx)
+	}, async.OptBatchParallelism(e.ParallelismOrDefault()), async.OptBatchErrors(batchErrors)).Process(ctx)
 
 	if len(batchErrors) > 0 {
 		return <-batchErrors

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudfront"
+
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/uuid"
 

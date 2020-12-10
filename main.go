@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/blend/go-sdk/sh"
 	"github.com/spf13/cobra"
+
+	"github.com/blend/go-sdk/sh"
 
 	"github.com/wcharczuk/blogctl/pkg/cmd"
 	"github.com/wcharczuk/blogctl/pkg/config"

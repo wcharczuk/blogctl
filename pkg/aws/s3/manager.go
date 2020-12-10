@@ -12,11 +12,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/blend/go-sdk/async"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 
+	"github.com/blend/go-sdk/async"
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/logger"
 	"github.com/blend/go-sdk/webutil"
@@ -25,7 +24,7 @@ import (
 )
 
 // New returns a new manager.
-func New(cfg *aws.Config) *Manager {
+func New(cfg aws.Config) *Manager {
 	return &Manager{
 		Config: cfg,
 		Ignores: []string{
@@ -41,7 +40,7 @@ func New(cfg *aws.Config) *Manager {
 type Manager struct {
 	Log               logger.Log
 	Ignores           []string
-	Config            *aws.Config
+	Config            aws.Config
 	Session           *session.Session
 	PutObjectDefaults File
 	DryRun            bool
@@ -71,7 +70,7 @@ func (m Manager) GetKey(rootPath, workingPath string) string {
 // It returns a list of invalidated keys (i.e. keys to update or remove), and an error.
 func (m Manager) SyncDirectory(ctx context.Context, directoryPath, bucket string) (invalidations []string, err error) {
 	if m.DryRun {
-		m.Log.Debugf("sync directory (dry run): not realizing changes")
+		m.Log.Debug("sync directory (dry run): not realizing changes")
 	}
 	localFiles := make(chan interface{}, 1024)
 	if err := m.DiscoverFiles(ctx, localFiles, directoryPath); err != nil {
@@ -128,7 +127,7 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 	errors := make(chan error, len(localFiles))
 
 	// create an async batch to process the file list.
-	async.NewBatch(func(ctx context.Context, workItem interface{}) error {
+	async.NewBatch(localFiles, func(ctx context.Context, workItem interface{}) error {
 		file, fileOK := workItem.(string)
 		if !fileOK {
 			return ex.New("process files; batch work item was not a string")
@@ -182,7 +181,7 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 			logger.MaybeDebugf(m.Log, "%s: skipping (unchanged)", key)
 		}
 		return nil
-	}, localFiles, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors)).Process(ctx)
+	}, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors)).Process(ctx)
 
 	// print errors if any were produced by the batch.
 	if errorCount := len(errors); errorCount > 0 {
@@ -194,7 +193,7 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 
 	errors = make(chan error, len(remoteFileBatch))
 	var invalidatedSync sync.Mutex
-	async.NewBatch(func(ctx context.Context, workItem interface{}) error {
+	async.NewBatch(remoteFileBatch, func(ctx context.Context, workItem interface{}) error {
 		remoteFile, remoteFileOK := workItem.(File)
 		if !remoteFileOK {
 			return ex.New("process files; remote cleanup batch work item was not a file")
@@ -222,7 +221,7 @@ func (m Manager) ProcessFiles(ctx context.Context, localFiles chan interface{}, 
 			logger.MaybeDebugf(m.Log, "%s: keeping remote file", remoteFile.Key)
 		}
 		return nil
-	}, remoteFileBatch, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors)).Process(ctx)
+	}, async.OptBatchParallelism(m.ParallelismOrDefault()), async.OptBatchErrors(errors)).Process(ctx)
 
 	// print errors if any were produced by the batch.
 	if errorCount := len(errors); errorCount > 0 {
