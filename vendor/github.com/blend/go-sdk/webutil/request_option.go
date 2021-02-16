@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package webutil
 
 import (
@@ -274,6 +281,14 @@ func OptXMLBody(obj interface{}) RequestOption {
 			r.Header = make(http.Header)
 		}
 		r.Header.Set(HeaderContentType, ContentTypeApplicationXML)
+		return nil
+	}
+}
+
+// OptHTTPClientTrace sets the http trace on the outgoing request.
+func OptHTTPClientTrace(ht *HTTPTrace) RequestOption {
+	return func(r *http.Request) error {
+		*r = *WithClientHTTPTrace(r, ht)
 		return nil
 	}
 }

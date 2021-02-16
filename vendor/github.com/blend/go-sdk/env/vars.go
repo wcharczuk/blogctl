@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package env
 
 import (
@@ -14,8 +21,13 @@ import (
 )
 
 // New returns a new env var set.
+//
+/* By default, it is empty. In order to populate it with the current
+runtime environment variables, you need to pass in options:
+    vars := env.New(env.OptEnviron(os.Environ()...))
+*/
 func New(opts ...Option) Vars {
-	vars := Vars{}
+	vars := make(Vars)
 	for _, opt := range opts {
 		opt(vars)
 	}
@@ -452,4 +464,14 @@ func (ev Vars) IsDevlike() bool {
 // ServiceName is a common environment variable for the service's name.
 func (ev Vars) ServiceName(defaults ...string) string {
 	return ev.String(VarServiceName, defaults...)
+}
+
+// Hostname is a common environment variable for the machine's hostname.
+func (ev Vars) Hostname(defaults ...string) string {
+	return ev.String(VarHostname, defaults...)
+}
+
+// Version is a common environment variable for the service version.
+func (ev Vars) Version(defaults ...string) string {
+	return ev.String(VarVersion, defaults...)
 }

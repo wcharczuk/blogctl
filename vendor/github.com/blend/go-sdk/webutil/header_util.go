@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package webutil
 
 import (
@@ -31,4 +38,13 @@ func HeaderAny(headers http.Header, key, value string) bool {
 		}
 	}
 	return false
+}
+
+// Headers creates headers from a given map.
+func Headers(from map[string]string) http.Header {
+	output := make(http.Header)
+	for key, value := range from {
+		output[key] = []string{value}
+	}
+	return output
 }

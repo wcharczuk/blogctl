@@ -1,6 +1,16 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package selector
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // Error is a hard alias to string.
 type Error string
@@ -13,4 +23,30 @@ func (e Error) Error() string {
 // MarshalJSON implements json.Marshaler.
 func (e Error) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(e))
+}
+
+// ParseError is a specific parse error.
+type ParseError struct {
+	Err      error
+	Input    string
+	Position int
+	Message  string
+}
+
+// Class implements ex.ClassProvider.
+func (pe ParseError) Class() error {
+	return pe.Err
+}
+
+// Unwrap implements unwrap.
+func (pe ParseError) Unwrap() error {
+	return pe.Err
+}
+
+// String implements error.
+func (pe ParseError) Error() string {
+	if pe.Message != "" {
+		return fmt.Sprintf("%q:0:%d: %v; %s", pe.Input, pe.Position, pe.Err, pe.Message)
+	}
+	return fmt.Sprintf("%q:0:%d: %v", pe.Input, pe.Position, pe.Err)
 }

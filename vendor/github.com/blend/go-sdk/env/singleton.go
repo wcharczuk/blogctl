@@ -1,6 +1,16 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package env
 
-import "sync"
+import (
+	"os"
+	"sync"
+)
 
 var (
 	_env     Vars
@@ -13,7 +23,7 @@ func Env() Vars {
 		_envLock.Lock()
 		defer _envLock.Unlock()
 		if _env == nil {
-			_env = New(OptFromEnv())
+			_env = New(OptEnviron(os.Environ()...))
 		}
 	}
 	return _env
@@ -28,7 +38,7 @@ func SetEnv(vars Vars) {
 
 // Restore sets .Env() to the current os environment.
 func Restore() {
-	SetEnv(New(OptFromEnv()))
+	SetEnv(New(OptEnviron(os.Environ()...)))
 }
 
 // Clear sets .Env() to an empty env var set.

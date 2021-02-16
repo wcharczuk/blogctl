@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/blend/go-sdk/stringutil"
@@ -23,14 +24,14 @@ func Fix(flags config.Flags) *cobra.Command {
 		Use:   "slugify",
 		Short: "Rename all subdirectories in the posts according to the slugify rules",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, configPath, err := config.ReadConfig(flags)
+			cfg, cfgPaths, err := config.ReadConfig(flags)
 			Fatal(err)
 
 			log := Logger(flags, "slugify")
 			slant.Print(log.Output, "BLOGCTL")
 
-			if configPath != "" {
-				log.Infof("using config path: %s", configPath)
+			if len(cfgPaths) > 0 {
+				log.Infof("using config path(s): %s", strings.Join(cfgPaths, ", "))
 			}
 
 			postsPath := cfg.PostsPathOrDefault()

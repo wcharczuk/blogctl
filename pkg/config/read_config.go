@@ -5,9 +5,9 @@ import (
 )
 
 // ReadConfig reads a config at a given path as yaml.
-func ReadConfig(flags Flags) (cfg Config, configPath string, err error) {
-	configPath, err = configutil.Read(&cfg,
-		configutil.OptAddPreferredFilePaths(*flags.ConfigPath),
+func ReadConfig(flags Flags) (cfg Config, configPaths []string, err error) {
+	configPaths, err = configutil.Read(&cfg,
+		configutil.OptAddPreferredPaths(*flags.ConfigPath),
 	)
 	if configutil.IsIgnored(err) {
 		err = nil

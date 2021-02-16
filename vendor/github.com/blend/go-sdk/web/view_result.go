@@ -1,9 +1,17 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package web
 
 import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"net"
 	"net/http"
 
 	"github.com/blend/go-sdk/env"
@@ -67,7 +75,12 @@ func (vr *ViewResult) Render(ctx *Ctx) (err error) {
 	ctx.Response.WriteHeader(vr.StatusCode)
 	_, err = ctx.Response.Write(buffer.Bytes())
 	if err != nil {
+		if typed, ok := err.(*net.OpError); ok {
+			err = ex.New(webutil.ErrNetWrite, ex.OptInner(typed))
+			return
+		}
 		err = ex.New(err)
+		return
 	}
 	return
 }

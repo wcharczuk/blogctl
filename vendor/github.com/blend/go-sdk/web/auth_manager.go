@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package web
 
 //github:codeowner @blend/infosec
@@ -454,7 +461,7 @@ func (am AuthManager) expire(ctx *Ctx, sessionValue string) error {
 
 // InjectCookie injects a session cookie into the context.
 func (am AuthManager) injectCookie(ctx *Ctx, value string, expire time.Time) {
-	ctx.WriteNewCookie(&http.Cookie{
+	http.SetCookie(ctx.Response, &http.Cookie{
 		Value:    value,
 		Expires:  expire,
 		Name:     am.CookieDefaults.Name,

@@ -1,13 +1,21 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package web
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
+	"net/url"
 	"time"
 
 	"github.com/blend/go-sdk/configutil"
+	"github.com/blend/go-sdk/ref"
 
 	"github.com/blend/go-sdk/webutil"
 )
@@ -37,37 +45,42 @@ type Config struct {
 	ReadHeaderTimeout   time.Duration     `json:"readHeaderTimeout,omitempty" yaml:"readHeaderTimeout,omitempty" env:"READ_HEADER_TIMEOUT"`
 	WriteTimeout        time.Duration     `json:"writeTimeout,omitempty" yaml:"writeTimeout,omitempty" env:"WRITE_TIMEOUT"`
 	IdleTimeout         time.Duration     `json:"idleTimeout,omitempty" yaml:"idleTimeout,omitempty" env:"IDLE_TIMEOUT"`
-	ShutdownGracePeriod time.Duration     `json:"shutdownGracePeriod" yaml:"shutdownGracePeriod" env:"SHUTDOWN_GRACE_PERIOD"`
+	ShutdownGracePeriod time.Duration     `json:"shutdownGracePeriod,omitempty" yaml:"shutdownGracePeriod,omitempty" env:"SHUTDOWN_GRACE_PERIOD"`
 
-	KeepAlive        *bool         `json:"keepAlive" yaml:"keepAlive" env:"KEEP_ALIVE"`
+	KeepAlive        *bool         `json:"keepAlive,omitempty" yaml:"keepAlive,omitempty" env:"KEEP_ALIVE"`
 	KeepAlivePeriod  time.Duration `json:"keepAlivePeriod,omitempty" yaml:"keepAlivePeriod,omitempty" env:"KEEP_ALIVE_PERIOD"`
-	UseProxyProtocol bool          `json:"useProxyProtocol" yaml:"useProxyProtocol"`
+	UseProxyProtocol bool          `json:"useProxyProtocol,omitempty" yaml:"useProxyProtocol,omitempty"`
 
 	Views ViewCacheConfig `json:"views,omitempty" yaml:"views,omitempty"`
+}
+
+// IsZero returns if the config is unset or not.
+func (c Config) IsZero() bool {
+	return c.BindAddr == "" && c.Port == 0
 }
 
 // Resolve resolves the config from other sources.
 func (c *Config) Resolve(ctx context.Context) error {
 	return configutil.Resolve(ctx,
 		(&c.Views).Resolve,
-		configutil.SetInt32(&c.Port, configutil.Int32(c.Port), configutil.Env("PORT")),
-		configutil.SetString(&c.BindAddr, configutil.String(c.BindAddr), configutil.Env("BIND_ADDR")),
-		configutil.SetString(&c.BaseURL, configutil.String(c.BaseURL), configutil.Env("BASE_URL")),
-		configutil.SetDuration(&c.SessionTimeout, configutil.Duration(c.SessionTimeout), configutil.Env("SESSION_TIMEOUT")),
-		configutil.SetBool(&c.CookieSecure, configutil.Bool(c.CookieSecure), configutil.Env("COOKIE_SECURE")),
-		configutil.SetBool(&c.CookieHTTPOnly, configutil.Bool(c.CookieHTTPOnly), configutil.Env("COOKIE_HTTP_ONLY")),
-		configutil.SetString(&c.CookieSameSite, configutil.String(c.CookieSameSite), configutil.Env("COOKIE_SAME_SITE")),
-		configutil.SetString(&c.CookieName, configutil.String(c.CookieName), configutil.Env("COOKIE_NAME")),
-		configutil.SetString(&c.CookiePath, configutil.String(c.CookiePath), configutil.Env("COOKIE_PATH")),
-		configutil.SetString(&c.CookieDomain, configutil.String(c.CookieDomain), configutil.Env("COOKIE_DOMAIN")),
-		configutil.SetInt(&c.MaxHeaderBytes, configutil.Int(c.MaxHeaderBytes), configutil.Env("MAX_HEADER_BYTES")),
-		configutil.SetDuration(&c.ReadTimeout, configutil.Duration(c.ReadTimeout), configutil.Env("READ_TIMEOUT")),
-		configutil.SetDuration(&c.ReadHeaderTimeout, configutil.Duration(c.ReadHeaderTimeout), configutil.Env("READ_HEADER_TIMEOUT")),
-		configutil.SetDuration(&c.WriteTimeout, configutil.Duration(c.WriteTimeout), configutil.Env("WRITE_TIMEOUT")),
-		configutil.SetDuration(&c.IdleTimeout, configutil.Duration(c.IdleTimeout), configutil.Env("IDLE_TIMEOUT")),
-		configutil.SetDuration(&c.ShutdownGracePeriod, configutil.Duration(c.ShutdownGracePeriod), configutil.Env("SHUTDOWN_GRACE_PERIOD")),
-		configutil.SetBool(&c.KeepAlive, configutil.Bool(c.KeepAlive), configutil.Env("KEEP_ALIVE")),
-		configutil.SetDuration(&c.KeepAlivePeriod, configutil.Duration(c.KeepAlivePeriod), configutil.Env("KEEP_ALIVE_PERIOD")),
+		configutil.SetInt32(&c.Port, configutil.Env("PORT"), configutil.Int32(c.Port)),
+		configutil.SetString(&c.BindAddr, configutil.Env("BIND_ADDR"), configutil.String(c.BindAddr)),
+		configutil.SetString(&c.BaseURL, configutil.Env("BASE_URL"), configutil.String(c.BaseURL)),
+		configutil.SetDuration(&c.SessionTimeout, configutil.Env("SESSION_TIMEOUT"), configutil.Duration(c.SessionTimeout)),
+		configutil.SetBool(&c.CookieSecure, configutil.Env("COOKIE_SECURE"), configutil.Bool(c.CookieSecure), configutil.BoolFunc(c.ResolveCookieSecure)),
+		configutil.SetBool(&c.CookieHTTPOnly, configutil.Env("COOKIE_HTTP_ONLY"), configutil.Bool(c.CookieHTTPOnly)),
+		configutil.SetString(&c.CookieSameSite, configutil.Env("COOKIE_SAME_SITE"), configutil.String(c.CookieSameSite)),
+		configutil.SetString(&c.CookieName, configutil.Env("COOKIE_NAME"), configutil.String(c.CookieName)),
+		configutil.SetString(&c.CookiePath, configutil.Env("COOKIE_PATH"), configutil.String(c.CookiePath)),
+		configutil.SetString(&c.CookieDomain, configutil.Env("COOKIE_DOMAIN"), configutil.String(c.CookieDomain), configutil.StringFunc(c.ResolveCookieDomain)),
+		configutil.SetInt(&c.MaxHeaderBytes, configutil.Env("MAX_HEADER_BYTES"), configutil.Int(c.MaxHeaderBytes)),
+		configutil.SetDuration(&c.ReadTimeout, configutil.Env("READ_TIMEOUT"), configutil.Duration(c.ReadTimeout)),
+		configutil.SetDuration(&c.ReadHeaderTimeout, configutil.Env("READ_HEADER_TIMEOUT"), configutil.Duration(c.ReadHeaderTimeout)),
+		configutil.SetDuration(&c.WriteTimeout, configutil.Env("WRITE_TIMEOUT"), configutil.Duration(c.WriteTimeout)),
+		configutil.SetDuration(&c.IdleTimeout, configutil.Env("IDLE_TIMEOUT"), configutil.Duration(c.IdleTimeout)),
+		configutil.SetDuration(&c.ShutdownGracePeriod, configutil.Env("SHUTDOWN_GRACE_PERIOD"), configutil.Duration(c.ShutdownGracePeriod)),
+		configutil.SetBool(&c.KeepAlive, configutil.Env("KEEP_ALIVE"), configutil.Bool(c.KeepAlive)),
+		configutil.SetDuration(&c.KeepAlivePeriod, configutil.Env("KEEP_ALIVE_PERIOD"), configutil.Duration(c.KeepAlivePeriod)),
 	)
 }
 
@@ -102,14 +115,6 @@ func (c Config) PortOrDefault() int32 {
 // BaseURLOrDefault gets the base url for the app or a default.
 func (c Config) BaseURLOrDefault() string {
 	return c.BaseURL
-}
-
-// BaseURLIsSecureScheme returns if the base url starts with a secure scheme.
-func (c Config) BaseURLIsSecureScheme() bool {
-	if c.BaseURL == "" {
-		return false
-	}
-	return strings.HasPrefix(strings.ToLower(c.BaseURL), webutil.SchemeHTTPS) || strings.HasPrefix(strings.ToLower(c.BaseURL), webutil.SchemeSPDY)
 }
 
 // SessionTimeoutOrDefault returns a property or a default.
@@ -150,7 +155,7 @@ func (c Config) CookieSecureOrDefault() bool {
 		return *c.CookieSecure
 	}
 	if baseURL := c.BaseURLOrDefault(); baseURL != "" {
-		return strings.HasPrefix(baseURL, webutil.SchemeHTTPS) || strings.HasPrefix(baseURL, webutil.SchemeSPDY)
+		return webutil.SchemeIsSecure(webutil.MustParseURL(baseURL).Scheme)
 	}
 	return DefaultCookieSecure
 }
@@ -233,4 +238,28 @@ func (c Config) KeepAlivePeriodOrDefault() time.Duration {
 		return c.KeepAlivePeriod
 	}
 	return DefaultKeepAlivePeriod
+}
+
+// ResolveCookieSecure is a resolver for the `CookieSecure` field based on the BaseURL if one is provided.
+func (c Config) ResolveCookieSecure(_ context.Context) (*bool, error) {
+	if c.BaseURL != "" {
+		baseURL, err := url.Parse(c.BaseURL)
+		if err != nil {
+			return nil, err
+		}
+		return ref.Bool(webutil.SchemeIsSecure(baseURL.Scheme)), nil
+	}
+	return nil, nil
+}
+
+// ResolveCookieDomain is a resolver for the `CookieDomain` field based on the BaseURL if one is provided.
+func (c Config) ResolveCookieDomain(_ context.Context) (*string, error) {
+	if c.BaseURL != "" {
+		baseURL, err := url.Parse(c.BaseURL)
+		if err != nil {
+			return nil, err
+		}
+		return ref.String(baseURL.Hostname()), nil
+	}
+	return nil, nil
 }

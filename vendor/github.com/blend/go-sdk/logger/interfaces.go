@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package logger
 
 import "context"
@@ -158,6 +165,12 @@ type FatalCloser interface {
 	Closer
 }
 
+// Flagged is a type that returns flags.
+type Flagged interface {
+	GetFlags() *Flags
+	GetWritable() *Flags
+}
+
 // Log is a logger that implements the full suite of logging methods.
 type Log interface {
 	Scoper
@@ -170,6 +183,7 @@ type Log interface {
 // FullLog is a logger that implements the full suite of logging methods.
 type FullLog interface {
 	Closer
+	Flagged
 	Listenable
 	Filterable
 	Log

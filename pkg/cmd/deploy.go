@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/blend/go-sdk/ansi/slant"
 	"github.com/spf13/cobra"
@@ -20,14 +21,14 @@ func Deploy(flags config.Flags) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, configPath, err := config.ReadConfig(flags)
+			cfg, cfgPaths, err := config.ReadConfig(flags)
 			Fatal(err)
 
 			log := Logger(flags, "deploy")
 			slant.Print(log.Output, "BLOGCTL")
 
-			if configPath != "" {
-				log.Infof("using config path: %s", configPath)
+			if len(cfgPaths) > 0 {
+				log.Infof("using config path(s): %s", strings.Join(cfgPaths, ", "))
 			}
 			log.Infof("using parallelism: %d", *flags.Parallelism)
 

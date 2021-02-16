@@ -21,14 +21,14 @@ func Server(flags config.Flags) *cobra.Command {
 		Use:   "server",
 		Short: "Start a static fileserver",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, cfgPath, err := config.ReadConfig(flags)
+			cfg, cfgPaths, err := config.ReadConfig(flags)
 			Fatal(err)
 
 			log := Logger(flags, "server")
 			slant.Print(log.Output, "BLOGCTL")
 
-			if cfgPath != "" {
-				log.Infof("using config path: %s", cfgPath)
+			if len(cfgPaths) > 0 {
+				log.Infof("using config path(s): %s", strings.Join(cfgPaths, ", "))
 			}
 			if *cached {
 				log.Infof("using cached static file server")
@@ -49,7 +49,7 @@ func Server(flags config.Flags) *cobra.Command {
 				app.ServeStatic("/", filePaths)
 			}
 
-			app.SetStaticRewriteRule("/", "/$", func(filePath string, matchedPieces ...string) string {
+			_ = app.SetStaticRewriteRule("/", "/$", func(filePath string, matchedPieces ...string) string {
 				if len(matchedPieces) > 0 {
 					return matchedPieces[0] + "index.html"
 				}

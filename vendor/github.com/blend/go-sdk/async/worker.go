@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package async
 
 import (
@@ -9,8 +16,8 @@ import (
 // NewWorker creates a new worker.
 func NewWorker(action WorkAction) *Worker {
 	return &Worker{
-		Context: context.Background(),
 		Latch:   NewLatch(),
+		Context: context.Background(),
 		Action:  action,
 		Work:    make(chan interface{}),
 	}
@@ -20,7 +27,7 @@ func NewWorker(action WorkAction) *Worker {
 // It is used by other work distribution types (i.e. queue and batch)
 // but can also be used independently.
 type Worker struct {
-	Latch *Latch
+	*Latch
 
 	Context   context.Context
 	Action    WorkAction
@@ -66,18 +73,16 @@ func (w *Worker) Start() error {
 // Dispatch starts the listen loop for work.
 func (w *Worker) Dispatch() {
 	w.Latch.Started()
+	defer w.Latch.Stopped()
+
 	var workItem interface{}
 	var stopping <-chan struct{}
 	for {
 		stopping = w.Latch.NotifyStopping()
-		// we should always check stopped
-		// before also blocking on work or stopping
 		select {
 		case <-stopping:
-			w.Latch.Stopped()
 			return
 		case <-w.Background().Done():
-			w.Latch.Stopped()
 			return
 		default:
 		}
@@ -87,10 +92,8 @@ func (w *Worker) Dispatch() {
 		case workItem = <-w.Work:
 			w.Execute(w.Background(), workItem)
 		case <-stopping:
-			w.Latch.Stopped()
 			return
 		case <-w.Background().Done():
-			w.Latch.Stopped()
 			return
 		}
 	}
@@ -117,23 +120,29 @@ func (w *Worker) Stop() error {
 	if !w.Latch.CanStop() {
 		return ex.New(ErrCannotStop)
 	}
-	w.Latch.Stopping()
-	<-w.Latch.NotifyStopped()
+	w.Latch.WaitStopped()
+	w.Latch.Reset()
 	return nil
 }
 
-// Drain stops the worker and synchronously waits
-// for in progress items to finish.
-func (w *Worker) Drain(ctx context.Context) {
-	drainComplete := make(chan struct{})
+// StopContext stops the worker in a given cancellation context.
+func (w *Worker) StopContext(ctx context.Context) {
+	stopped := make(chan struct{})
 	go func() {
-		defer close(drainComplete)
-		w.Latch.Stopping()
-		<-w.Latch.NotifyStopped()
-	}()
+		defer func() {
+			w.Latch.Reset()
+			close(stopped)
+		}()
 
+		w.Latch.WaitStopped()
+		if workLeft := len(w.Work); workLeft > 0 {
+			for x := 0; x < workLeft; x++ {
+				w.Execute(ctx, <-w.Work)
+			}
+		}
+	}()
 	select {
-	case <-drainComplete:
+	case <-stopped:
 		return
 	case <-ctx.Done():
 		return

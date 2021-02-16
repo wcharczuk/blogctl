@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package logger
 
 import (
@@ -76,29 +83,59 @@ func GetPath(ctx context.Context) []string {
 
 type labelsKey struct{}
 
-// WithLabels returns a new context with a given additional labels.
-func WithLabels(ctx context.Context, labels Labels) context.Context {
+// WithSetLabels sets the labels on a context, overwriting any existing labels.
+func WithSetLabels(ctx context.Context, labels Labels) context.Context {
 	return context.WithValue(ctx, labelsKey{}, labels)
 }
 
-// WithLabel returns a new context with a given additional label.
-func WithLabel(ctx context.Context, key, value string) context.Context {
-	existing := GetLabels(ctx)
-	if existing == nil {
-		existing = make(Labels)
+// WithLabels returns a new context with a given additional labels.
+//
+// Any labels already on the context will be added to the new set
+// with the provided set being layered on top of those.
+func WithLabels(ctx context.Context, labels Labels) context.Context {
+	// it is critical here that we copy the labels
+	// and not mutate the existing map
+	combinedLabels := GetLabels(ctx)
+	for key, value := range labels {
+		combinedLabels[key] = value
 	}
-	existing[key] = value
-	return context.WithValue(ctx, labelsKey{}, existing)
+	return context.WithValue(ctx, labelsKey{}, combinedLabels)
+}
+
+// WithLabel returns a new context with a given additional label.
+//
+// Any labels already on the context will be added to the new set
+// with the provided set being layered on top of those.
+func WithLabel(ctx context.Context, key, value string) context.Context {
+	newLabels := make(Labels)
+
+	// it is critical here that we copy the labels
+	// and not mutate the existing map.
+	existing := GetLabels(ctx)
+	for key, value := range existing {
+		newLabels[key] = value
+	}
+
+	// we assign after as the new value should overwrite
+	newLabels[key] = value
+	return context.WithValue(ctx, labelsKey{}, newLabels)
 }
 
 // GetLabels gets labels off a context.
+//
+// It will return a copy of the labels, preventing map races.
 func GetLabels(ctx context.Context) Labels {
 	if raw := ctx.Value(labelsKey{}); raw != nil {
 		if typed, ok := raw.(Labels); ok {
-			return typed
+			// create a copy
+			output := make(Labels)
+			for key, value := range typed {
+				output[key] = value
+			}
+			return output
 		}
 	}
-	return nil
+	return make(Labels)
 }
 
 type annotationsKey struct{}
@@ -122,10 +159,15 @@ func WithAnnotation(ctx context.Context, key, value string) context.Context {
 func GetAnnotations(ctx context.Context) Annotations {
 	if raw := ctx.Value(annotationsKey{}); raw != nil {
 		if typed, ok := raw.(Annotations); ok {
-			return typed
+			// create a copy
+			output := make(Annotations)
+			for key, value := range typed {
+				output[key] = value
+			}
+			return output
 		}
 	}
-	return nil
+	return make(Annotations)
 }
 
 type skipTriggerKey struct{}

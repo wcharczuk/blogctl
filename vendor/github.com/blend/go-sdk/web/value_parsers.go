@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package web
 
 import (
@@ -5,6 +12,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/blend/go-sdk/uuid"
+)
+
+// Common errors
+var (
+	ErrInvalidBoolValue = fmt.Errorf("invalid boolean value")
 )
 
 // BoolValue parses a value as an bool.
@@ -15,12 +29,12 @@ func BoolValue(value string, inputErr error) (output bool, err error) {
 		return
 	}
 	switch strings.ToLower(value) {
-	case "1", "true", "yes":
+	case "1", "true", "yes", "on":
 		output = true
-	case "0", "false", "no":
+	case "0", "false", "no", "off":
 		output = false
 	default:
-		err = fmt.Errorf("invalid boolean value")
+		err = ErrInvalidBoolValue
 	}
 	return
 }
@@ -80,4 +94,12 @@ func CSVValue(value string, err error) ([]string, error) {
 		return nil, err
 	}
 	return strings.Split(value, ","), nil
+}
+
+// UUIDValue returns a uuid typed value.
+func UUIDValue(param string, inputErr error) (uuid.UUID, error) {
+	if inputErr != nil {
+		return nil, inputErr
+	}
+	return uuid.Parse(param)
 }

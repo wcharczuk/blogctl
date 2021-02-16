@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package async
 
 import (
@@ -88,6 +95,7 @@ func (i *Interval) Stop() error {
 	}
 	i.Stopping()
 	<-i.NotifyStopped()
+	i.Latch.Reset() // reset the latch in case we have to start again
 	return nil
 }
 

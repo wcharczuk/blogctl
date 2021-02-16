@@ -1,17 +1,32 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package env
 
 // Service specific constants
 const (
+	// VarRegion is a common env var name.
+	VarRegion = "AWS_REGION"
 	// VarServiceEnv is a common env var name.
 	VarServiceEnv = "SERVICE_ENV"
 	// VarServiceName is a common env var name.
 	VarServiceName = "SERVICE_NAME"
+	// VarProjectName is a common env var name.
+	VarProjectName = "PROJECT_NAME"
 	// VarServiceSecret is a common env var name.
 	VarServiceSecret = "SERVICE_SECRET"
 	// VarPort is a common env var name.
 	VarPort = "PORT"
 	// VarHostname is a common env var name.
 	VarHostname = "HOSTNAME"
+	// VarVersion is a common env var name.
+	VarVersion = "VERSION"
+	// VarGitRef is a common env var name.
+	VarGitRef = "GIT_REF"
 	// VarSecurePort is a common env var name.
 	VarSecurePort = "SECURE_PORT"
 	// VarTLSCertPath is a common env var name.

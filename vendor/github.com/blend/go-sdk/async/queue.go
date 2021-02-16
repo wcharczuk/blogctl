@@ -1,8 +1,17 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package async
 
 import (
 	"context"
 	"runtime"
+	"sync"
+	"time"
 
 	"github.com/blend/go-sdk/ex"
 )
@@ -10,11 +19,12 @@ import (
 // NewQueue returns a new parallel queue.
 func NewQueue(action WorkAction, options ...QueueOption) *Queue {
 	q := Queue{
-		Latch:       NewLatch(),
-		Action:      action,
-		Context:     context.Background(),
-		MaxWork:     DefaultQueueMaxWork,
-		Parallelism: runtime.NumCPU(),
+		Latch:               NewLatch(),
+		Action:              action,
+		Context:             context.Background(),
+		MaxWork:             DefaultQueueMaxWork,
+		Parallelism:         runtime.NumCPU(),
+		ShutdownGracePeriod: DefaultShutdownGracePeriod,
 	}
 	for _, option := range options {
 		option(&q)
@@ -55,17 +65,19 @@ func OptQueueContext(ctx context.Context) QueueOption {
 
 // Queue is a queue with multiple workers.
 type Queue struct {
-	Latch *Latch
+	*Latch
 
-	Action      WorkAction
-	Context     context.Context
-	Errors      chan error
-	Parallelism int
-	MaxWork     int
+	Action              WorkAction
+	Context             context.Context
+	Errors              chan error
+	Parallelism         int
+	MaxWork             int
+	ShutdownGracePeriod time.Duration
 
 	// these will typically be set by Start
-	Workers chan *Worker
-	Work    chan interface{}
+	AvailableWorkers chan *Worker
+	Workers          []*Worker
+	Work             chan interface{}
 }
 
 // Background returns a background context.
@@ -91,7 +103,8 @@ func (q *Queue) Start() error {
 
 	// create channel(s)
 	q.Work = make(chan interface{}, q.MaxWork)
-	q.Workers = make(chan *Worker, q.Parallelism)
+	q.AvailableWorkers = make(chan *Worker, q.Parallelism)
+	q.Workers = make([]*Worker, q.Parallelism)
 
 	for x := 0; x < q.Parallelism; x++ {
 		worker := NewWorker(q.Action)
@@ -102,7 +115,8 @@ func (q *Queue) Start() error {
 		// start the worker on its own goroutine
 		go func() { _ = worker.Start() }()
 		<-worker.NotifyStarted()
-		q.Workers <- worker
+		q.AvailableWorkers <- worker
+		q.Workers[x] = worker
 	}
 	q.Dispatch()
 	return nil
@@ -111,6 +125,8 @@ func (q *Queue) Start() error {
 // Dispatch processes work items in a loop.
 func (q *Queue) Dispatch() {
 	q.Latch.Started()
+	defer q.Latch.Stopped()
+
 	var workItem interface{}
 	var worker *Worker
 	var stopping <-chan struct{}
@@ -118,51 +134,98 @@ func (q *Queue) Dispatch() {
 		stopping = q.Latch.NotifyStopping()
 		select {
 		case <-stopping:
-			q.Latch.Stopped()
+			return
+		case <-q.Background().Done():
 			return
 		default:
 		}
+
 		select {
-		case workItem = <-q.Work:
-			stopping = q.Latch.NotifyStopping()
-			select {
-			case worker = <-q.Workers:
-				worker.Enqueue(workItem)
-			case <-stopping:
-				q.Latch.Stopped()
-				return
-			}
 		case <-stopping:
-			q.Latch.Stopped()
 			return
+		case <-q.Background().Done():
+			return
+		case workItem = <-q.Work:
+			select {
+			case <-stopping:
+				q.Work <- workItem
+				return
+			case <-q.Background().Done():
+				q.Work <- workItem
+				return
+			case worker = <-q.AvailableWorkers:
+				worker.Enqueue(workItem)
+			}
 		}
 	}
 }
 
-// Stop stops the queue.
+// Stop stops the queue and processes any remaining items.
 func (q *Queue) Stop() error {
 	if !q.Latch.CanStop() {
 		return ex.New(ErrCannotStop)
 	}
-	q.Latch.WaitStopped()
-	workerCount := len(q.Workers)
-	for x := 0; x < workerCount; x++ {
-		worker := <-q.Workers
-		_ = worker.Stop()
-		q.Workers <- worker
+	q.Latch.WaitStopped() // wait for the dispatch loop to exit
+	defer q.Latch.Reset() // reset the latch in case we have to start again
+
+	timeoutContext, cancel := context.WithTimeout(q.Background(), q.ShutdownGracePeriod)
+	defer cancel()
+
+	if remainingWork := len(q.Work); remainingWork > 0 {
+		for x := 0; x < remainingWork; x++ {
+			// check the timeout first
+			select {
+			case <-timeoutContext.Done():
+				return nil
+			default:
+			}
+
+			select {
+			case <-timeoutContext.Done():
+				return nil
+			case workItem := <-q.Work:
+				select {
+				case <-timeoutContext.Done():
+					return nil
+				case worker := <-q.AvailableWorkers:
+					worker.Work <- workItem
+				}
+			}
+		}
 	}
-	return nil
+
+	workersStopped := make(chan struct{})
+	go func() {
+		defer close(workersStopped)
+		wg := sync.WaitGroup{}
+		wg.Add(len(q.Workers))
+		for _, worker := range q.Workers {
+			go func(w *Worker) {
+				defer wg.Done()
+				w.StopContext(timeoutContext)
+			}(worker)
+		}
+		wg.Wait()
+	}()
+
+	select {
+	case <-timeoutContext.Done():
+		return nil
+	case <-workersStopped:
+		return nil
+	}
 }
 
 // Close stops the queue.
 // Any work left in the queue will be discarded.
 func (q *Queue) Close() error {
 	q.Latch.WaitStopped()
+	q.Latch.Reset()
 	return nil
 }
 
 // ReturnWorker returns a given worker to the worker queue.
 func (q *Queue) ReturnWorker(ctx context.Context, worker *Worker) error {
-	q.Workers <- worker
+	q.AvailableWorkers <- worker
 	return nil
 }

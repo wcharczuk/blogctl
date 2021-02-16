@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package web
 
 import (
@@ -196,6 +203,10 @@ func OptShutdownGracePeriod(d time.Duration) Option {
 }
 
 // OptServerOptions applies options to the underlying http server.
+//
+// Many of the fields on the server are overwritten by the config on `app.Start`.
+// You should only use `OptServerOptions` for fields that are not governed by the config
+// such as the stdlib logger.
 func OptServerOptions(opts ...webutil.HTTPServerOption) Option {
 	return func(a *App) error {
 		for _, opt := range opts {
@@ -203,6 +214,61 @@ func OptServerOptions(opts ...webutil.HTTPServerOption) Option {
 				return err
 			}
 		}
+		return nil
+	}
+}
+
+// OptReadTimeout sets the read timeout.
+//
+// Note that this will override the config setting if OptConfig comes before it
+// and will be overwritten by the config if OptConfig comes after it.
+func OptReadTimeout(d time.Duration) Option {
+	return func(a *App) error {
+		a.Config.ReadTimeout = d
+		return nil
+	}
+}
+
+// OptReadHeaderTimeout sets the read header timeout.
+//
+// Note that this will override the config setting if OptConfig comes before it
+// and will be overwritten by the config if OptConfig comes after it.
+func OptReadHeaderTimeout(d time.Duration) Option {
+	return func(a *App) error {
+		a.Config.ReadHeaderTimeout = d
+		return nil
+	}
+}
+
+// OptWriteTimeout sets the write timeout.
+//
+// Note that this will override the config setting if OptConfig comes before it
+// and will be overwritten by the config if OptConfig comes after it.
+func OptWriteTimeout(d time.Duration) Option {
+	return func(a *App) error {
+		a.Config.WriteTimeout = d
+		return nil
+	}
+}
+
+// OptIdleTimeout sets the idle timeout.
+//
+// Note that this will override the config setting if OptConfig comes before it
+// and will be overwritten by the config if OptConfig comes after it.
+func OptIdleTimeout(d time.Duration) Option {
+	return func(a *App) error {
+		a.Config.IdleTimeout = d
+		return nil
+	}
+}
+
+// OptMaxHeaderBytes sets the max header bytes.
+//
+// Note that this will override the config setting if OptConfig comes before it
+// and will be overwritten by the config if OptConfig comes after it.
+func OptMaxHeaderBytes(maxHeaderBytes int) Option {
+	return func(a *App) error {
+		a.Config.MaxHeaderBytes = maxHeaderBytes
 		return nil
 	}
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -17,15 +18,15 @@ func Build(flags config.Flags) *cobra.Command {
 		Use:   "build",
 		Short: "Build the photoblog",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, cfgPath, err := config.ReadConfig(flags)
+			cfg, cfgPaths, err := config.ReadConfig(flags)
 			Fatal(err)
 
 			log := Logger(flags, "build")
 			slant.Print(log.Output, "BLOGCTL")
 
 			log.Infof("using logger flags: %v", log.Flags.String())
-			if cfgPath != "" {
-				log.Infof("using config path: %s", cfgPath)
+			if len(cfgPaths) > 0 {
+				log.Infof("using config path(s): %s", strings.Join(cfgPaths, ", "))
 			}
 			log.Infof("using parallelism: %d", *flags.Parallelism)
 

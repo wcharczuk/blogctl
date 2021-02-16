@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package web
 
 import (
@@ -18,6 +25,13 @@ func NewLocalSessionCache() *LocalSessionCache {
 type LocalSessionCache struct {
 	SessionLock *sync.Mutex
 	Sessions    map[string]*Session
+}
+
+// Apply applies the local session cache to a given auth manager.
+func (lsc *LocalSessionCache) Apply(am *AuthManager) {
+	am.FetchHandler = lsc.FetchHandler
+	am.PersistHandler = lsc.PersistHandler
+	am.RemoveHandler = lsc.RemoveHandler
 }
 
 // FetchHandler is a shim to interface with the auth manager.

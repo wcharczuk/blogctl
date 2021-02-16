@@ -1,12 +1,13 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package configutil
 
 import "context"
-
-// BareResolver is the legacy / deprecated interface.
-// Please add support for the context-ful resolver.
-type BareResolver interface {
-	Resolve() error
-}
 
 // Resolver is a type that can be resolved.
 type Resolver interface {

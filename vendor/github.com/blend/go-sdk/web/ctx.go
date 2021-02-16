@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package web
 
 import (
@@ -14,7 +21,6 @@ import (
 	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/logger"
 	"github.com/blend/go-sdk/reflectutil"
-	"github.com/blend/go-sdk/webutil"
 )
 
 var (
@@ -96,7 +102,8 @@ func (rc *Ctx) WithContext(ctx context.Context) *Ctx {
 
 // Context returns the context.
 func (rc *Ctx) Context() context.Context {
-	ctx := logger.WithLabels(rc.Request.Context(), logger.CombineLabels(logger.GetLabels(rc.Request.Context()), rc.Labels()))
+	ctx := logger.WithLabels(rc.Request.Context(), logger.GetLabels(rc.Request.Context()))
+	ctx = logger.WithLabels(ctx, rc.Labels())
 	ctx = logger.WithAnnotations(ctx, logger.CombineAnnotations(logger.GetAnnotations(rc.Request.Context()), rc.Annotations()))
 	return ctx
 }
@@ -292,15 +299,6 @@ func (rc *Ctx) PostBodyAsForm(response interface{}) error {
 	}, response)
 }
 
-// CookieDomain returns the cookie domain for a request.
-func (rc *Ctx) CookieDomain() string {
-	if rc.App != nil && rc.App.Config.BaseURL != "" {
-		u := webutil.MustParseURL(rc.App.Config.BaseURL)
-		return u.Hostname()
-	}
-	return ExtractHost(rc.Request.Host)
-}
-
 // Cookie returns a named cookie from the request.
 func (rc *Ctx) Cookie(name string) *http.Cookie {
 	cookie, err := rc.Request.Cookie(name)
@@ -310,14 +308,6 @@ func (rc *Ctx) Cookie(name string) *http.Cookie {
 	return cookie
 }
 
-// WriteNewCookie is a helper method for WriteCookie.
-func (rc *Ctx) WriteNewCookie(cookie *http.Cookie) {
-	if cookie.Domain == "" {
-		cookie.Domain = rc.CookieDomain()
-	}
-	http.SetCookie(rc.Response, cookie)
-}
-
 // ExtendCookieByDuration extends a cookie by a time duration (on the order of nanoseconds to hours).
 func (rc *Ctx) ExtendCookieByDuration(name string, path string, duration time.Duration) {
 	c := rc.Cookie(name)
@@ -325,7 +315,6 @@ func (rc *Ctx) ExtendCookieByDuration(name string, path string, duration time.Du
 		return
 	}
 	c.Path = path
-	c.Domain = rc.CookieDomain()
 	if c.Expires.IsZero() {
 		c.Expires = time.Now().UTC().Add(duration)
 	} else {
@@ -341,7 +330,6 @@ func (rc *Ctx) ExtendCookie(name string, path string, years, months, days int) {
 		return
 	}
 	c.Path = path
-	c.Domain = rc.CookieDomain()
 	if c.Expires.IsZero() {
 		c.Expires = time.Now().UTC().AddDate(years, months, days)
 	} else {
@@ -358,9 +346,7 @@ func (rc *Ctx) ExpireCookie(name string, path string) {
 	}
 	c.Path = path
 	c.Value = NewSessionID()
-	c.Domain = rc.CookieDomain()
 	c.Expires = time.Now().UTC().AddDate(-1, 0, 0)
-
 	http.SetCookie(rc.Response, c)
 }
 

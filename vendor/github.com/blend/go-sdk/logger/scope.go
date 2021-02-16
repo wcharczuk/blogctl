@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package logger
 
 import (
@@ -233,7 +240,7 @@ func (sc Scope) FromContext(ctx context.Context) Scope {
 // ApplyContext applies the scope fields to a given context.
 func (sc Scope) ApplyContext(ctx context.Context) context.Context {
 	ctx = WithPath(ctx, append(sc.Path, GetPath(ctx)...)...)
-	ctx = WithLabels(ctx, CombineLabels(sc.Labels, GetLabels(ctx)))
+	ctx = WithLabels(ctx, sc.Labels) // treated specially because maps are references
 	ctx = WithAnnotations(ctx, CombineAnnotations(sc.Annotations, GetAnnotations(ctx)))
 	return ctx
 }

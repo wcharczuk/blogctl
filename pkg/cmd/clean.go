@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -17,13 +18,13 @@ func Clean(flags config.Flags) *cobra.Command {
 		Use:   "clean",
 		Short: "Clean caches",
 		Run: func(cmd *cobra.Command, args []string) {
-			cfg, configPath, err := config.ReadConfig(flags)
+			cfg, cfgPaths, err := config.ReadConfig(flags)
 			Fatal(err)
 
 			log := Logger(flags, "clean")
 			slant.Print(log.Output, "BLOGCTL")
-			if configPath != "" {
-				log.Infof("using config path: %s", configPath)
+			if len(cfgPaths) > 0 {
+				log.Infof("using config path(s): %s", strings.Join(cfgPaths, ", "))
 			}
 
 			if err := engine.MustNew(

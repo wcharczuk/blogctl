@@ -1,8 +1,17 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package web
 
 import (
+	"net"
 	"net/http"
 
+	"github.com/blend/go-sdk/ex"
 	"github.com/blend/go-sdk/webutil"
 )
 
@@ -38,5 +47,11 @@ func (rr *RawResult) Render(ctx *Ctx) error {
 	}
 	ctx.Response.WriteHeader(rr.StatusCode)
 	_, err := ctx.Response.Write(rr.Response)
-	return err
+	if err != nil {
+		if typed, ok := err.(*net.OpError); ok {
+			return ex.New(webutil.ErrNetWrite, ex.OptInner(typed))
+		}
+		return ex.New(err)
+	}
+	return nil
 }

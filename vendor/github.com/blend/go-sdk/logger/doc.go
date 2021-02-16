@@ -1,4 +1,11 @@
 /*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
+/*
 Package logger is our high throughput event bus.
 
 It has two main modes of output; text and json, and allows multiple listeners to be triggerd for a given logger event.

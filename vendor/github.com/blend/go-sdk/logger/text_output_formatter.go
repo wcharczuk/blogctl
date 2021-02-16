@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package logger
 
 import (
@@ -147,10 +154,12 @@ func (tf TextOutputFormatter) WriteFormat(ctx context.Context, output io.Writer,
 		buffer.WriteString(stringer.String())
 	}
 
-	labels := GetLabels(ctx)
-	if len(labels) > 0 {
-		buffer.WriteString("\t")
-		buffer.WriteString(tf.FormatLabels(labels))
+	if !tf.HideFields {
+		labels := GetLabels(ctx)
+		if len(labels) > 0 {
+			buffer.WriteString("\t")
+			buffer.WriteString(tf.FormatLabels(labels))
+		}
 	}
 
 	buffer.WriteString(Newline)

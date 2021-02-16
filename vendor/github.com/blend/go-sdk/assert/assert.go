@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package assert
 
 import (
@@ -265,6 +272,42 @@ func (a *Assertions) NotContains(corpus, substring string, userMessageComponents
 	return true
 }
 
+// HasPrefix asserts that a corpus has a given prefix.
+func (a *Assertions) HasPrefix(corpus, prefix string, userMessageComponents ...interface{}) bool {
+	a.assertion()
+	if didFail, message := shouldHasPrefix(corpus, prefix); didFail {
+		return a.fail(message, userMessageComponents...)
+	}
+	return true
+}
+
+// NotHasPrefix asserts that a corpus does not have a given prefix.
+func (a *Assertions) NotHasPrefix(corpus, prefix string, userMessageComponents ...interface{}) bool {
+	a.assertion()
+	if didFail, message := shouldNotHasPrefix(corpus, prefix); didFail {
+		return a.fail(message, userMessageComponents...)
+	}
+	return true
+}
+
+// HasSuffix asserts that a corpus has a given suffix.
+func (a *Assertions) HasSuffix(corpus, suffix string, userMessageComponents ...interface{}) bool {
+	a.assertion()
+	if didFail, message := shouldHasSuffix(corpus, suffix); didFail {
+		return a.fail(message, userMessageComponents...)
+	}
+	return true
+}
+
+// NotHasSuffix asserts that a corpus does not have a given suffix.
+func (a *Assertions) NotHasSuffix(corpus, suffix string, userMessageComponents ...interface{}) bool {
+	a.assertion()
+	if didFail, message := shouldNotHasSuffix(corpus, suffix); didFail {
+		return a.fail(message, userMessageComponents...)
+	}
+	return true
+}
+
 // Matches returns if a given value matches a given regexp expression.
 func (a *Assertions) Matches(expr string, value interface{}, userMessageComponents ...interface{}) bool {
 	a.assertion()
@@ -314,6 +357,15 @@ func (a *Assertions) AnyOfFloat64(target []float64, predicate PredicateOfFloat, 
 func (a *Assertions) AnyOfString(target []string, predicate PredicateOfString, userMessageComponents ...interface{}) bool {
 	a.assertion()
 	if didFail, message := shouldAnyOfString(target, predicate); didFail {
+		return a.fail(message, userMessageComponents...)
+	}
+	return true
+}
+
+// AnyCount applies a predicate and passes if it fires a given number of times .
+func (a *Assertions) AnyCount(target interface{}, times int, predicate Predicate, userMessageComponents ...interface{}) bool {
+	a.assertion()
+	if didFail, message := shouldAnyCount(target, times, predicate); didFail {
 		return a.fail(message, userMessageComponents...)
 	}
 	return true
@@ -747,6 +799,38 @@ func shouldNotContain(corpus, subString string) (bool, string) {
 	return false, ""
 }
 
+func shouldHasPrefix(corpus, prefix string) (bool, string) {
+	if !strings.HasPrefix(corpus, prefix) {
+		message := fmt.Sprintf("`%s` should have prefix `%s`", corpus, prefix)
+		return true, message
+	}
+	return false, ""
+}
+
+func shouldNotHasPrefix(corpus, prefix string) (bool, string) {
+	if strings.HasPrefix(corpus, prefix) {
+		message := fmt.Sprintf("`%s` should not have prefix `%s`", corpus, prefix)
+		return true, message
+	}
+	return false, ""
+}
+
+func shouldHasSuffix(corpus, suffix string) (bool, string) {
+	if !strings.HasSuffix(corpus, suffix) {
+		message := fmt.Sprintf("`%s` should have suffix `%s`", corpus, suffix)
+		return true, message
+	}
+	return false, ""
+}
+
+func shouldNotHasSuffix(corpus, suffix string) (bool, string) {
+	if strings.HasSuffix(corpus, suffix) {
+		message := fmt.Sprintf("`%s` should not have suffix `%s`", corpus, suffix)
+		return true, message
+	}
+	return false, ""
+}
+
 func shouldAny(target interface{}, predicate Predicate) (bool, string) {
 	t := reflect.TypeOf(target)
 	for t.Kind() == reflect.Ptr {
@@ -769,6 +853,34 @@ func shouldAny(target interface{}, predicate Predicate) (bool, string) {
 		}
 	}
 	return true, "Predicate did not fire for any element in target"
+}
+
+func shouldAnyCount(target interface{}, times int, predicate Predicate) (bool, string) {
+	t := reflect.TypeOf(target)
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	v := reflect.ValueOf(target)
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if t.Kind() != reflect.Slice {
+		return true, "`target` is not a slice"
+	}
+
+	var seen int
+	for x := 0; x < v.Len(); x++ {
+		obj := v.Index(x).Interface()
+		if predicate(obj) {
+			seen++
+		}
+	}
+	if seen != times {
+		return true, shouldBeMultipleMessage(times, seen, "Predicate should fire a given number of times")
+	}
+	return false, ""
 }
 
 func shouldAnyOfInt(target []int, predicate PredicateOfInt) (bool, string) {

@@ -1,4 +1,11 @@
 /*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
+/*
 Package r2 is a rewrite of the sdk http request package that eschews fluent apis in favor of the options pattern.
 
 The request returned by `r2.New()` i.e. `*r2.Request` holds everything required to send the request, including the http client reference, and a transport reference. If neither are specified, defaults are used (http.DefaultClient for the client, etc.)
@@ -17,14 +24,14 @@ You can specify additional options as a variadic list of `Opt...` functions:
 
 	resp, err := r2.New("http://example.com",
 		r2.OptPost(),
-		r2.OptHeaderValue("X-Foo", "bailey"),
+		r2.OptHeaderValue("X-Foo", "example-string"),
 	).Do()
 
 There are convenience methods on the request type that help with things like decoding types as json:
 
 	meta, err := r2.New("http://example.com",
 		r2.OptPost(),
-		r2.OptHeaderValue("X-Foo", "bailey"),
+		r2.OptHeaderValue("X-Foo", "example-string"),
 	).JSON(&myObj)
 
 Note that in the above, the JSON method also returns a closed version of the response for metadata purposes.
@@ -33,7 +40,7 @@ You can also fire and forget the request with the `.Discard()` method:
 
 	meta, err := r2.New("http://example.com",
 		r2.OptPost(),
-		r2.OptHeaderValue("X-Foo", "bailey"),
+		r2.OptHeaderValue("X-Foo", "example-string"),
 	).Discard()
 
 

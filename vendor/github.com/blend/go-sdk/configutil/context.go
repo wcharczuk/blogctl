@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package configutil
 
 import (
@@ -6,13 +13,13 @@ import (
 
 type configFilePathsKey struct{}
 
-// WithConfigFilePaths adds config file paths to the context.
-func WithConfigFilePaths(ctx context.Context, paths []string) context.Context {
+// WithConfigPaths adds config file paths to the context.
+func WithConfigPaths(ctx context.Context, paths []string) context.Context {
 	return context.WithValue(ctx, configFilePathsKey{}, paths)
 }
 
-// GetConfigFilePaths gets the config file paths from a context..
-func GetConfigFilePaths(ctx context.Context) []string {
+// GetConfigPaths gets the config file paths from a context..
+func GetConfigPaths(ctx context.Context) []string {
 	if raw := ctx.Value(configFilePathsKey{}); raw != nil {
 		if typed, ok := raw.([]string); ok {
 			return typed

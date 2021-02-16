@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package logger
 
 import (
@@ -103,6 +110,16 @@ type Logger struct {
 	Filters map[string]map[string]Filter
 	// Listeners hold event listeners organized by flag, and then by listener name.
 	Listeners map[string]map[string]*Worker
+}
+
+// GetFlags returns the flags.
+func (l *Logger) GetFlags() *Flags {
+	return l.Flags
+}
+
+// GetWritable returns the writable flags.
+func (l *Logger) GetWritable() *Flags {
+	return l.Writable
 }
 
 // HasListeners returns if there are registered listener for an event.

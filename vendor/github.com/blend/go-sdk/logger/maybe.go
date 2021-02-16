@@ -1,3 +1,10 @@
+/*
+
+Copyright (c) 2021 - Present. Blend Labs, Inc. All rights reserved
+Use of this source code is governed by a MIT license that can be found in the LICENSE file.
+
+*/
+
 package logger
 
 import (
@@ -11,6 +18,13 @@ func IsLoggerSet(log interface{}) bool {
 		return typed != nil
 	}
 	return log != nil
+}
+
+// MaybeDrainContext drains a logger if it's a valid reference and can be drained.
+func MaybeDrainContext(ctx context.Context, log interface{}) {
+	if typed, ok := log.(*Logger); ok && typed != nil {
+		typed.DrainContext(ctx)
+	}
 }
 
 // MaybeTrigger triggers an event if the logger is set.
