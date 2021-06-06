@@ -257,7 +257,7 @@ func (e Engine) BuildRenderContext(ctx context.Context) (*model.RenderContext, e
 func (e Engine) Render(ctx context.Context) error {
 	renderContext := GetRenderContext(ctx)
 
-	logger.MaybeInfof(e.Log, "rendering posts with parallelism %d", e.ParallelismOrDefault())
+	logger.MaybeInfof(e.Log, "rendering site with parallelism %d", e.ParallelismOrDefault())
 	var err error
 
 	outputPath := e.Config.OutputPathOrDefault()
@@ -307,7 +307,7 @@ func (e Engine) Render(ctx context.Context) error {
 		}
 
 		outputIndexPath := filepath.Join(slugPath, constants.FileIndex)
-		logger.MaybeDebugf(e.Log, "%s: rendering page", outputIndexPath)
+		logger.MaybeDebugf(e.Log, "%s: processing page", outputIndexPath)
 		var postTextOutput string
 		if postTextOutput, err = e.RenderTemplateToFile(postTemplate, outputIndexPath, &model.ViewModel{
 			Config: e.Config,
@@ -583,6 +583,7 @@ func (e Engine) ProcessThumbnails(ctx context.Context, originalFilePath, destina
 	}
 
 	if e.ShouldGenerateThumbnails(etag) {
+		logger.MaybeInfof(e.Log, "%s: generating thumbnails", originalFilePath)
 		if err := e.GenerateThumbnails(originalContents, originalFilePath, etag); err != nil {
 			return nil
 		}
